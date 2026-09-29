@@ -1,0 +1,20 @@
+{
+  "id": "com.onairgarage.loudnesscalculator",
+  "name": "Loudness Target Calculator",
+  "short_name": "Loudness",
+  "description": "Gain in dB to bring a file to a loudness target: EBU R 128, ATSC A/85, streaming platforms and podcasts.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#14110d",
+  "theme_color": "#14110d",
+  "lang": "en",
+  "categories": ["utilities", "music"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

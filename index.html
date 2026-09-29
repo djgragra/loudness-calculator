@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#14110d">
+  <meta name="description" content="Gain in dB to bring a file to a loudness target: EBU R 128, ATSC A/85, Spotify, YouTube, Apple Music, Amazon Music, BBC and podcasts.">
+  <meta name="author" content="Graziano Melzi · OnAir Garage">
+  <title>Loudness Target Calculator</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#gainOut" data-i18n="display.gain">Gain to apply</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand__icon" src="icons/icon.svg" alt="" width="28" height="28">
+      <div>
+        <h1 class="brand__title" data-i18n="app.title">Loudness Target Calculator</h1>
+        <p class="brand__sub" data-i18n="app.subtitle">Gain needed to reach a loudness target</p>
+      </div>
+    </div>
+    <div class="controls">
+      <label class="ctl">
+        <span class="ctl__label" data-i18n="ctl.language">Language</span>
+        <select id="langSel"></select>
+      </label>
+      <label class="ctl">
+        <span class="ctl__label" data-i18n="ctl.theme">Theme</span>
+        <select id="themeSel">
+          <option value="auto" data-i18n="theme.auto">Auto</option>
+          <option value="light" data-i18n="theme.light">Light</option>
+          <option value="dark" data-i18n="theme.dark">Dark</option>
+        </select>
+      </label>
+      <button type="button" id="helpBtn" class="btn btn--ghost" data-i18n="ctl.help">How it works</button>
+    </div>
+  </header>
+
+  <main class="instrument">
+    <section class="panel" aria-labelledby="gainLabel">
+      <div class="lcd" id="lcd" data-state="idle">
+        <p class="lcd__label" id="gainLabel" data-i18n="display.gain">Gain to apply</p>
+        <p class="lcd__row">
+          <output id="gainOut" class="lcd__value" for="lufsIn tpIn stdSel" aria-live="polite">— —</output>
+          <span class="lcd__unit" data-i18n="unit.db">dB</span>
+        </p>
+        <p class="lcd__status" id="status" data-i18n="display.idle">Enter the measured integrated loudness to begin.</p>
+      </div>
+
+      <dl class="readouts">
+        <div class="readout">
+          <dt data-i18n="read.input">Input</dt>
+          <dd><span id="rdInput" class="readout__val">—</span> <span class="readout__unit" data-i18n="unit.lufs">LUFS</span></dd>
+        </div>
+        <div class="readout">
+          <dt data-i18n="read.target">Target</dt>
+          <dd><span id="rdTarget" class="readout__val">—</span> <span class="readout__unit" data-i18n="unit.lufs">LUFS</span></dd>
+        </div>
+        <div class="readout">
+          <dt data-i18n="read.result">Result</dt>
+          <dd><span id="rdResult" class="readout__val">—</span> <span class="readout__unit" data-i18n="unit.lufs">LUFS</span></dd>
+        </div>
+        <div class="readout" id="rdTpCell">
+          <dt data-i18n="read.resultTp">Result true peak</dt>
+          <dd><span id="rdTp" class="readout__val">—</span> <span class="readout__unit" data-i18n="unit.dbtp">dBTP</span></dd>
+          <dd class="readout__note" id="rdTpLimit"></dd>
+        </div>
+      </dl>
+
+      <div class="scale" id="scale" role="img" aria-labelledby="scaleLabel" aria-describedby="scaleDesc">
+        <p class="scale__label" id="scaleLabel" data-i18n="scale.label">Loudness scale, LUFS</p>
+        <div class="scale__track" id="scaleTrack">
+          <div class="scale__ticks" id="scaleTicks"></div>
+          <div class="scale__band" id="scaleBand" hidden></div>
+          <div class="scale__span" id="scaleSpan" hidden></div>
+          <div class="scale__mark scale__mark--target" id="mkTarget" hidden><span class="scale__tag" data-i18n="scale.target">TARGET</span></div>
+          <div class="scale__mark scale__mark--input" id="mkInput" hidden><span class="scale__tag" data-i18n="scale.input">IN</span></div>
+          <div class="scale__mark scale__mark--result" id="mkResult" hidden><span class="scale__tag" data-i18n="scale.result">OUT</span></div>
+          <div class="scale__mark scale__mark--safe" id="mkSafe" hidden><span class="scale__tag" data-i18n="scale.safe">MAX</span></div>
+        </div>
+        <div class="scale__nums" id="scaleNums" aria-hidden="true"></div>
+        <ul class="scale__legend">
+          <li class="lg lg--input" data-i18n="scale.legendInput">Input (measured)</li>
+          <li class="lg lg--target" data-i18n="scale.legendTarget">Target and tolerance</li>
+          <li class="lg lg--result" data-i18n="scale.legendResult">Result after gain</li>
+          <li class="lg lg--safe" id="lgSafe" hidden data-i18n="scale.legendSafe">Highest loudness reachable under the peak limit</li>
+        </ul>
+        <p class="sr-only" id="scaleDesc"></p>
+      </div>
+
+      <div class="warn" id="warn" role="alert" hidden>
+        <p class="warn__title" data-i18n="warn.title">True peak over the limit</p>
+        <p class="warn__body" id="warnBody"></p>
+      </div>
+    </section>
+
+    <form class="inputs" id="form" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="lufsIn" data-i18n="in.lufs">Integrated loudness</label>
+        <div class="field__box">
+          <input id="lufsIn" type="text" inputmode="decimal" spellcheck="false" aria-describedby="lufsHint lufsErr">
+          <span class="field__unit" data-i18n="unit.lufs">LUFS</span>
+        </div>
+        <p class="field__hint" id="lufsHint" data-i18n="in.lufsHint">Measured value, LUFS (e.g. −18.4)</p>
+        <p class="field__err" id="lufsErr" role="alert" hidden data-i18n="in.err.lufs">Enter a value between −70 and 0 LUFS.</p>
+      </div>
+
+      <div class="field">
+        <label for="tpIn" data-i18n="in.tp">True peak</label>
+        <div class="field__box">
+          <input id="tpIn" type="text" inputmode="decimal" spellcheck="false" aria-describedby="tpHint tpErr">
+          <span class="field__unit" data-i18n="unit.dbtp">dBTP</span>
+        </div>
+        <p class="field__hint" id="tpHint" data-i18n="in.tpHint">Optional, dBTP (e.g. −1.2)</p>
+        <p class="field__err" id="tpErr" role="alert" hidden data-i18n="in.err.tp">Enter a value between −70 and +12 dBTP, or leave empty.</p>
+      </div>
+
+      <div class="field field--wide">
+        <label for="stdSel" data-i18n="in.standard">Target standard</label>
+        <select id="stdSel"></select>
+      </div>
+
+      <div class="custom" id="customBox" hidden>
+        <div class="field">
+          <label for="cTarget" data-i18n="in.custom.target">Custom target</label>
+          <div class="field__box">
+            <input id="cTarget" type="text" inputmode="decimal" spellcheck="false">
+            <span class="field__unit" data-i18n="unit.lufs">LUFS</span>
+          </div>
+          <p class="field__err" id="cTargetErr" role="alert" hidden data-i18n="in.err.customTarget">Enter a target between −70 and 0 LUFS.</p>
+        </div>
+        <div class="field">
+          <label for="cLimit" data-i18n="in.custom.limit">Custom true-peak limit</label>
+          <div class="field__box">
+            <input id="cLimit" type="text" inputmode="decimal" spellcheck="false" aria-describedby="cLimitHint">
+            <span class="field__unit" data-i18n="unit.dbtp">dBTP</span>
+          </div>
+          <p class="field__hint" id="cLimitHint" data-i18n="in.custom.limitHint">Leave empty for no limit</p>
+          <p class="field__err" id="cLimitErr" role="alert" hidden data-i18n="in.err.customLimit">Enter a limit between −70 and +12 dBTP, or leave empty.</p>
+        </div>
+      </div>
+    </form>
+
+    <section class="info" aria-live="polite">
+      <div class="info__head">
+        <h2 class="info__name" id="infoName"></h2>
+        <span class="badge" id="infoBadge"></span>
+      </div>
+      <dl class="info__grid" id="infoGrid"></dl>
+      <p class="info__note" id="infoNote"></p>
+      <div class="play" id="play" hidden>
+        <h3 class="play__title" data-i18n="play.title">Platform playback</h3>
+        <p class="play__body" id="playBody"></p>
+        <p class="play__hint" data-i18n="play.hint">Two different gains: yours (shown above) and the one the platform applies while playing.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span data-i18n="foot.by">Graziano Melzi · OnAir Garage</span>
+    <span aria-hidden="true">·</span>
+    <a href="https://onairgarage.com" rel="noopener">onairgarage.com</a>
+    <span aria-hidden="true">·</span>
+    <span data-i18n="foot.license">MIT License</span>
+    <span aria-hidden="true">·</span>
+    <a href="mailto:hello@onairgarage.com" data-i18n="foot.contact">Contact</a>
+    <span aria-hidden="true">·</span>
+    <span id="ver">v1.0.0</span>
+  </footer>
+
+  <dialog id="helpDlg" class="help" aria-labelledby="helpTitle">
+    <div class="help__head">
+      <h2 id="helpTitle" data-i18n="help.title">How it works</h2>
+      <button type="button" id="helpClose" class="btn btn--ghost" data-i18n="help.close">Close</button>
+    </div>
+    <div class="help__body">
+      <h3 data-i18n="help.h1">What it does</h3><p data-i18n="help.p1"></p>
+      <h3 data-i18n="help.h2">The gain</h3><p data-i18n="help.p2"></p>
+      <h3 data-i18n="help.h3">True peak and the warning</h3><p data-i18n="help.p3"></p>
+      <h3 data-i18n="help.h4">The scale</h3><p data-i18n="help.p4"></p>
+      <h3 data-i18n="help.h5">Standards</h3><p data-i18n="help.p5"></p>
+      <h3 data-i18n="help.h6">Official and recommended values</h3><p data-i18n="help.p6"></p>
+      <h3 data-i18n="help.h7">Platform playback</h3><p data-i18n="help.p7"></p>
+      <h3 data-i18n="help.h8">Custom target</h3><p data-i18n="help.p8"></p>
+      <h3 data-i18n="help.h9">Language, theme, offline</h3><p data-i18n="help.p9"></p>
+      <h3 data-i18n="help.h10">Privacy</h3><p data-i18n="help.p10"></p>
+    </div>
+  </dialog>
+
+  <div class="update hidden" id="updateBanner" role="status">
+    <span data-i18n="pwa.update">A new version is ready.</span>
+    <button type="button" id="updateReload" class="btn" data-i18n="pwa.reload">Reload</button>
+    <button type="button" id="updateDismiss" class="btn btn--ghost" data-i18n="pwa.dismiss">Later</button>
+  </div>
+
+  <script src="calc.js"></script>
+  <script src="standards.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

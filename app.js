@@ -1,0 +1,386 @@
+/* Loudness Target Calculator — UI.
+   © 2026 Graziano Melzi · OnAir Garage — MIT License */
+(function () {
+  "use strict";
+
+  var VERSION = "1.0.0";
+  var STORE = "com.onairgarage.loudnesscalculator.";
+  var Calc = window.LoudnessCalc;
+  var Std = window.LoudnessStandards;
+  var I18n = window.LoudnessI18n;
+
+  var LUFS_MIN = -70, LUFS_MAX = 0, TP_MIN = -70, TP_MAX = 12;
+  var GROUPS = ["broadcast", "streaming", "podcast"];
+
+  function $(id) { return document.getElementById(id); }
+
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(STORE + key); return v === null ? fallback : v; } catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(STORE + key, value); } catch (e) { /* storage unavailable */ }
+  }
+
+  var state = {
+    lang: load("lang", null),
+    theme: load("theme", "auto"),
+    std: load("std", "ebu")
+  };
+  if (I18n.langs.indexOf(state.lang) === -1) state.lang = I18n.detect(navigator.languages || [navigator.language]);
+  if (["auto", "light", "dark"].indexOf(state.theme) === -1) state.theme = "auto";
+  if (state.std !== "custom" && !Std.byId(state.std)) state.std = "ebu";
+
+  function t() { return I18n.t.apply(null, [state.lang].concat([].slice.call(arguments))); }
+
+  // ---------- number formatting ----------
+  function fmt(n, signed) {
+    var r = Calc.round1(n);
+    if (Object.is(r, -0) || r === 0) r = 0;
+    var s = Math.abs(r).toFixed(1);
+    if (state.lang !== "en") s = s.replace(".", ",");
+    if (r < 0) return "−" + s;
+    return (signed && r > 0 ? "+" : "") + s;
+  }
+
+  // ---------- language & theme ----------
+  function applyLang() {
+    document.documentElement.lang = state.lang;
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
+    $("langSel").setAttribute("aria-label", t("ctl.language"));
+    buildStandardSelect();
+    render();
+  }
+
+  function applyTheme() {
+    var root = document.documentElement;
+    if (state.theme === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", state.theme);
+    var dark = state.theme === "dark" ||
+      (state.theme === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", dark ? "#14110d" : "#ece6d8");
+  }
+
+  function buildLangSelect() {
+    var sel = $("langSel");
+    I18n.langs.forEach(function (code) {
+      var o = document.createElement("option");
+      o.value = code; o.textContent = I18n.names[code];
+      sel.appendChild(o);
+    });
+    sel.value = state.lang;
+  }
+
+  function buildStandardSelect() {
+    var sel = $("stdSel");
+    sel.textContent = "";
+    GROUPS.forEach(function (g) {
+      var og = document.createElement("optgroup");
+      og.label = t("group." + g);
+      Std.list.forEach(function (s) {
+        if (s.group !== g) return;
+        var o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.name + " · " + fmt(s.target) + " LUFS";
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+    var other = document.createElement("optgroup");
+    other.label = t("group.other");
+    var c = document.createElement("option");
+    c.value = "custom"; c.textContent = t("std.custom");
+    other.appendChild(c);
+    sel.appendChild(other);
+    sel.value = state.std;
+  }
+
+  // ---------- inputs ----------
+  function readField(id, min, max, optional) {
+    var raw = $(id).value;
+    if (raw.trim() === "") return { empty: true, ok: optional, value: null };
+    var n = Calc.parseNumber(raw);
+    if (n === null || n < min || n > max) return { empty: false, ok: false, value: null };
+    return { empty: false, ok: true, value: n };
+  }
+
+  function showError(id, bad) {
+    $(id).hidden = !bad;
+  }
+
+  function currentStandard(custom) {
+    if (state.std === "custom") {
+      return {
+        id: "custom", name: t("std.custom").replace("…", ""), target: custom.target.value,
+        tolerance: null, tpLimit: custom.limit.value, status: "custom", source: null
+      };
+    }
+    return Std.byId(state.std);
+  }
+
+  // ---------- scale ----------
+  var STEPS = [1, 2, 5, 10];
+  var MINOR_DIV = { 1: 2, 2: 2, 5: 5, 10: 5 };
+
+  function setPos(el, pct) { el.style.left = pct + "%"; }
+
+  function renderScale(v) {
+    var pts = [v.target];
+    if (v.tolerance !== null) pts.push(v.target - v.tolerance, v.target + v.tolerance);
+    if (v.input !== null) pts.push(v.input, v.result);
+    if (v.safe !== null) pts.push(v.safe);
+    var lo = Math.min.apply(null, pts) - 3, hi = Math.max.apply(null, pts) + 3;
+    if (hi - lo < 12) { var mid = (hi + lo) / 2; lo = mid - 6; hi = mid + 6; }
+    var step = 10;
+    for (var i = 0; i < STEPS.length; i++) if ((hi - lo) / STEPS[i] <= 10) { step = STEPS[i]; break; }
+    lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    var span = hi - lo;
+    function pct(x) { return ((x - lo) / span) * 100; }
+
+    var ticks = $("scaleTicks"), nums = $("scaleNums");
+    ticks.textContent = ""; nums.textContent = "";
+    var minor = step / MINOR_DIV[step];
+    for (var x = lo; x <= hi + 1e-9; x += minor) {
+      var isMajor = Math.abs(x / step - Math.round(x / step)) < 1e-9;
+      var tk = document.createElement("i");
+      tk.className = "tick" + (isMajor ? " tick--major" : "");
+      setPos(tk, pct(x));
+      ticks.appendChild(tk);
+      if (isMajor) {
+        var nm = document.createElement("span");
+        nm.textContent = String(Math.round(x)).replace("-", "−");
+        setPos(nm, pct(x));
+        nums.appendChild(nm);
+      }
+    }
+
+    var band = $("scaleBand");
+    if (v.tolerance !== null) {
+      band.hidden = false;
+      setPos(band, pct(v.target - v.tolerance));
+      band.style.width = (pct(v.target + v.tolerance) - pct(v.target - v.tolerance)) + "%";
+    } else band.hidden = true;
+
+    var mkTarget = $("mkTarget"), mkInput = $("mkInput"), mkResult = $("mkResult"), mkSafe = $("mkSafe");
+    var spanEl = $("scaleSpan");
+    var tagT = mkTarget.firstElementChild;
+    setPos(mkTarget, pct(v.target)); mkTarget.hidden = false;
+
+    var haveIn = v.input !== null;
+    mkInput.hidden = !haveIn; mkResult.hidden = true; mkSafe.hidden = v.safe === null; spanEl.hidden = true;
+    $("lgSafe").hidden = v.safe === null;
+    tagT.textContent = t("scale.target");
+    mkTarget.className = "scale__mark scale__mark--target scale__mark--top";
+    mkInput.className = "scale__mark scale__mark--input scale__mark--top";
+    mkResult.className = "scale__mark scale__mark--result scale__mark--bottom";
+    mkSafe.className = "scale__mark scale__mark--safe scale__mark--bottom";
+
+    if (haveIn) {
+      setPos(mkInput, pct(v.input));
+      if (Math.abs(pct(v.input) - pct(v.target)) < 12) mkTarget.className = "scale__mark scale__mark--target scale__mark--bottom";
+      var same = Math.abs(v.result - v.target) < 0.05;
+      if (same) {
+        tagT.textContent = t("scale.target") + " · " + t("scale.result");
+      } else {
+        mkResult.hidden = false; setPos(mkResult, pct(v.result));
+      }
+      var a = Math.min(v.input, v.result), b = Math.max(v.input, v.result);
+      if (b - a > 0.001) {
+        spanEl.hidden = false; setPos(spanEl, pct(a)); spanEl.style.width = (pct(b) - pct(a)) + "%";
+        spanEl.className = "scale__span" + (v.warn ? " scale__span--warn" : "");
+      }
+      if (v.safe !== null) {
+        setPos(mkSafe, pct(v.safe));
+        // keep the MAX tag clear of the target tag when both sit below the bar
+        if (mkTarget.classList.contains("scale__mark--bottom") && Math.abs(pct(v.safe) - pct(v.target)) < 14) {
+          mkSafe.className = "scale__mark scale__mark--safe scale__mark--top";
+        }
+      }
+    }
+  }
+
+  // ---------- info panel ----------
+  function addRow(dl, label, valueNode) {
+    var wrap = document.createElement("div");
+    var dt = document.createElement("dt"); dt.textContent = label;
+    var dd = document.createElement("dd"); dd.appendChild(valueNode);
+    wrap.appendChild(dt); wrap.appendChild(dd); dl.appendChild(wrap);
+  }
+  function text(s) { return document.createTextNode(s); }
+
+  function renderInfo(s) {
+    $("infoName").textContent = s.id === "custom" ? t("std.custom").replace("…", "") : s.name;
+    var badge = $("infoBadge");
+    if (s.status === "official") { badge.textContent = t("info.official"); badge.className = "badge badge--official"; }
+    else if (s.status === "recommended") { badge.textContent = t("info.recommended"); badge.className = "badge badge--reco"; }
+    else { badge.textContent = ""; badge.className = "badge badge--hidden"; }
+
+    var dl = $("infoGrid"); dl.textContent = "";
+    addRow(dl, t("info.target"), text(s.target === null ? "—" : fmt(s.target) + " LUFS"));
+    var tolKey = { ebu: "info.tolEbu", atsc: "info.tolAtsc", bbc: "info.tolBbc" }[s.id];
+    addRow(dl, t("info.tolerance"), text(s.tolerance !== null && tolKey ? t(tolKey, fmt(s.tolerance).replace("−", "")) : t("info.none")));
+    var tpNode = document.createElement("span");
+    tpNode.appendChild(text(s.tpLimit === null ? t("info.none") : fmt(s.tpLimit) + " dBTP"));
+    var tpKey = "info.tpNote." + s.id;
+    if (s.tpLimit !== null && s.id !== "custom") {
+      var note = document.createElement("small");
+      note.textContent = I18n.strings.en[tpKey] ? t(tpKey) : t("info.tpNote.generic");
+      tpNode.appendChild(document.createElement("br")); tpNode.appendChild(note);
+    }
+    addRow(dl, t("info.tpLimit"), tpNode);
+    if (s.source) {
+      var a = document.createElement("a");
+      a.href = s.source.url; a.textContent = s.source.label; a.rel = "noopener"; a.target = "_blank";
+      addRow(dl, t("info.source"), a);
+    }
+    $("infoNote").textContent = s.status === "recommended" ? t("info.recommendedNote") : (s.status === "custom" ? t("info.customNote") : "");
+  }
+
+  function renderPlayback(s, input, tp) {
+    var box = $("play");
+    if (!s.playback || input === null) { box.hidden = true; return; }
+    var pb = Calc.playbackGain(s.playback.mode, input, s.target, tp, s.playback.headroomTp);
+    if (!pb) { box.hidden = true; return; }
+    var msg = t(s.playback.mode === "updown" ? "play.updown" : "play.down", s.name, fmt(pb.gain, true));
+    if (pb.headroomLimited) msg += t("play.updownLimited");
+    if (pb.headroomUnknown) msg += t("play.updownUnknown");
+    if (s.status !== "official") msg += " " + t("play.unofficial");
+    $("playBody").textContent = msg;
+    box.hidden = false;
+  }
+
+  // ---------- main render ----------
+  function setStatus(key, args, state_) {
+    $("status").textContent = t.apply(null, [key].concat(args || []));
+    $("lcd").setAttribute("data-state", state_);
+  }
+
+  function render() {
+    var lufs = readField("lufsIn", LUFS_MIN, LUFS_MAX, false);
+    var tp = readField("tpIn", TP_MIN, TP_MAX, true);
+    var custom = { target: readField("cTarget", LUFS_MIN, LUFS_MAX, false), limit: readField("cLimit", TP_MIN, TP_MAX, true) };
+    var isCustom = state.std === "custom";
+
+    $("customBox").hidden = !isCustom;
+    showError("lufsErr", !lufs.empty && !lufs.ok);
+    showError("tpErr", !tp.empty && !tp.ok);
+    showError("cTargetErr", isCustom && !custom.target.empty && !custom.target.ok);
+    showError("cLimitErr", isCustom && !custom.limit.empty && !custom.limit.ok);
+
+    var s = isCustom ? currentStandard(custom) : Std.byId(state.std);
+    var targetOk = !isCustom || custom.target.ok;
+    var limitOk = !isCustom || custom.limit.ok;
+    var tpVal = tp.ok ? tp.value : null;
+    var tpInvalid = !tp.empty && !tp.ok;
+
+    renderInfo(isCustom ? { id: "custom", name: "", target: targetOk ? s.target : null, tolerance: null, tpLimit: limitOk ? s.tpLimit : null, status: "custom", source: null } : s);
+
+    $("rdTarget").textContent = targetOk ? fmt(s.target) : "—";
+    $("warn").hidden = true;
+
+    var ready = lufs.ok && targetOk && limitOk && !tpInvalid;
+    if (!ready) {
+      $("gainOut").textContent = "— —";
+      $("rdInput").textContent = lufs.ok ? fmt(lufs.value) : "—";
+      $("rdResult").textContent = "—"; $("rdTp").textContent = "—"; $("rdTpLimit").textContent = "";
+      $("rdTpCell").removeAttribute("data-state");
+      setStatus("display.idle", null, "idle");
+      if (targetOk) renderScale({ target: s.target, tolerance: s.tolerance, input: null, result: null, safe: null, warn: false });
+      renderPlayback(isCustom ? { playback: null } : s, null, null);
+      return;
+    }
+
+    var r = Calc.compute({ input: lufs.value, target: s.target, tp: tpVal, tpLimit: s.tpLimit, tolerance: s.tolerance });
+    $("gainOut").textContent = fmt(r.gain, true);
+    $("rdInput").textContent = fmt(lufs.value);
+    $("rdResult").textContent = fmt(r.resultLufs);
+    $("rdTp").textContent = r.resultTp === null ? "—" : fmt(r.resultTp);
+    $("rdTpLimit").textContent = s.tpLimit === null ? t("read.noLimit") : t("read.limit", fmt(s.tpLimit));
+    $("rdTpCell").setAttribute("data-state", r.tpOver ? "over" : (r.tpChecked ? "ok" : "none"));
+
+    if (r.tpOver) {
+      setStatus("warn.title", null, "warn");
+      var neg = r.maxSafeGain < 0;
+      $("warnBody").textContent = t(neg ? "warn.body.negative" : "warn.body",
+        fmt(r.gain, true), fmt(r.resultTp), fmt(r.overBy), fmt(s.tpLimit),
+        neg ? fmt(-r.maxSafeGain) : fmt(r.maxSafeGain, true), fmt(r.maxSafeLufs));
+      $("warn").hidden = false;
+    } else if (r.withinTolerance) {
+      setStatus("display.within", [fmt(s.tolerance).replace("−", "")], "ok");
+    } else if (s.tpLimit !== null && tpVal === null) {
+      setStatus("display.tpSkipped", null, "ok");
+    } else if (r.tpChecked) {
+      setStatus("display.tpOk", [fmt(s.tpLimit)], "ok");
+    } else {
+      setStatus("display.reached", null, "ok");
+    }
+
+    renderScale({
+      target: s.target, tolerance: s.tolerance, input: lufs.value, result: r.resultLufs,
+      safe: r.tpOver ? r.maxSafeLufs : null, warn: r.tpOver
+    });
+    $("scaleDesc").textContent = t("read.input") + " " + fmt(lufs.value) + " LUFS, " + t("read.target") + " " +
+      fmt(s.target) + " LUFS, " + t("display.gain") + " " + fmt(r.gain, true) + " dB.";
+    renderPlayback(isCustom ? { playback: null } : s, lufs.value, tpVal);
+  }
+
+  // ---------- wiring ----------
+  function init() {
+    $("ver").textContent = "v" + VERSION;
+    buildLangSelect();
+    $("themeSel").value = state.theme;
+    $("cTarget").value = load("cTarget", "-23");
+    $("cLimit").value = load("cLimit", "-1");
+    applyTheme();
+    applyLang();
+
+    $("form").addEventListener("submit", function (e) { e.preventDefault(); });
+    ["lufsIn", "tpIn"].forEach(function (id) { $(id).addEventListener("input", render); });
+    ["cTarget", "cLimit"].forEach(function (id) {
+      $(id).addEventListener("input", function () { save(id, $(id).value); render(); });
+    });
+    $("stdSel").addEventListener("change", function () { state.std = $("stdSel").value; save("std", state.std); render(); });
+    $("langSel").addEventListener("change", function () { state.lang = $("langSel").value; save("lang", state.lang); applyLang(); });
+    $("themeSel").addEventListener("change", function () { state.theme = $("themeSel").value; save("theme", state.theme); applyTheme(); });
+    if (window.matchMedia) {
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      var onChange = function () { if (state.theme === "auto") applyTheme(); };
+      if (mq.addEventListener) mq.addEventListener("change", onChange);
+    }
+
+    var dlg = $("helpDlg");
+    $("helpBtn").addEventListener("click", function () { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); });
+    $("helpClose").addEventListener("click", function () { dlg.close(); });
+    dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+
+    // Offline support: cache the app shell on first visit and offer a reload
+    // when a new version has finished installing in the background.
+    if ("serviceWorker" in navigator) {
+      var banner = $("updateBanner");
+      var reloaded = false;
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").then(function (reg) {
+          reg.addEventListener("updatefound", function () {
+            var installing = reg.installing;
+            if (!installing) return;
+            installing.addEventListener("statechange", function () {
+              if (installing.state === "installed" && navigator.serviceWorker.controller) banner.classList.remove("hidden");
+            });
+          });
+          $("updateReload").addEventListener("click", function () {
+            if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          });
+          $("updateDismiss").addEventListener("click", function () { banner.classList.add("hidden"); });
+        }).catch(function () { /* offline support unavailable */ });
+        navigator.serviceWorker.addEventListener("controllerchange", function () {
+          if (reloaded) return;
+          reloaded = true;
+          location.reload();
+        });
+      });
+    }
+  }
+
+  init();
+})();
