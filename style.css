@@ -268,7 +268,12 @@ select { cursor: pointer; }
 .lock[aria-checked="false"] { border-color: var(--accent); color: var(--accent); }
 .lock[aria-checked="true"] .lock__ico--open, .lock[aria-checked="false"] .lock__ico--closed { display: none; }
 .scale__hint { margin: 12px 0 0; font-size: 15px; color: var(--ink2); }
-.scale--editable .scale__track { cursor: ew-resize; touch-action: none; }
-.scale--editable .scale__mark--target::after { content: ""; position: absolute; left: -10px; top: 50%; width: 17px; height: 17px; margin-top: -8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--face); box-shadow: 0 0 0 1px var(--accent); }
+.scale--editable .scale__track { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.scale--dragging .scale__track { cursor: grabbing; }
+.scale--editable .scale__track::before, .scale--editable .scale__track::after { position: absolute; top: 4px; z-index: 2; font-size: 30px; line-height: 1; color: var(--accent); opacity: .75; pointer-events: none; }
+.scale--editable .scale__track::before { content: "\2039"; left: 6px; }
+.scale--editable .scale__track::after { content: "\203A"; right: 6px; }
+.scale__mark--edge-l .scale__tag { transform: none; }
+.scale__mark--edge-r .scale__tag { transform: translateX(-100%); }
 .scale__mark--target:focus-visible { outline: none; }
 .scale__mark--target:focus-visible .scale__tag { outline: 2px solid var(--focus); outline-offset: 2px; }

@@ -14,7 +14,7 @@ Enter the integrated loudness of a file (LUFS, from any ITU-R BS.1770 meter), op
 - **Gain to apply** = target − measured loudness (dB).
 - **Resulting loudness** and **resulting true peak** (measured true peak + gain).
 - A **warning** if the gain pushes the true peak over the standard's limit, with the highest gain you can apply without a limiter.
-- A **scale** with input, target (and tolerance band) and result. The target can be moved on the scale (drag, or arrow keys): it is locked while a preset standard is selected; the lock switch unlocks it and switches to Custom, and choosing Custom unlocks it automatically.
+- A **scale** with input, target (and tolerance band) and result. The scale is centred on the target and works like a wheel: drag it left/right (mouse wheel and arrow keys work too) to change the target. It is locked while a preset standard is selected; the lock switch unlocks it and switches to Custom, and choosing Custom unlocks it automatically. Markers outside the visible range stick to the edge with an arrow and their value.
 - **Platform playback**: the gain a streaming platform would apply to your file as it is.
 - A custom target / true-peak limit for house or client specs.
 - **Measure from a file**: if you don't know the values, load an audio file; loudness and true peak are measured in the browser and copied into the fields.

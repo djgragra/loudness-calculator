@@ -30,9 +30,9 @@
   if (["auto", "light", "dark"].indexOf(state.theme) === -1) state.theme = "auto";
   if (state.std !== "custom" && !Std.byId(state.std)) state.std = "ebu";
   var locked = state.std !== "custom";   // presets lock the target on the scale; Custom unlocks it
-  var scaleWin = null;                   // { lo, hi, step } of the scale as drawn
-  var frozenWin = null;                  // window kept fixed while dragging, so the scale does not rescale under the pointer
+  var scaleWin = null;                   // { lo, hi, span, pxPerLU } of the scale as drawn
   var dragging = false;
+  var dragStart = null;                  // { x, target } at pointer down
 
   function t() { return I18n.t.apply(null, [state.lang].concat([].slice.call(arguments))); }
 
@@ -130,57 +130,61 @@
   }
 
   // ---------- scale ----------
+  // The scale is centred on the target, which stays fixed under the centre pointer:
+  // moving the target scrolls the scale like a wheel. Markers outside the visible
+  // range stick to the edge with an arrow and their value.
   var STEPS = [1, 2, 5, 10];
   var MINOR_DIV = { 1: 2, 2: 2, 5: 5, 10: 5 };
+  var PX_PER_LU = 14;    // target width of one loudness unit on screen
 
   function setPos(el, pct) { el.style.left = pct + "%"; }
 
   function renderScale(v) {
-    var pts = [v.target];
-    if (v.tolerance !== null) pts.push(v.target - v.tolerance, v.target + v.tolerance);
-    if (v.input !== null) pts.push(v.input, v.result);
-    if (v.safe !== null) pts.push(v.safe);
-    var lo, hi, step;
-    if (frozenWin) { lo = frozenWin.lo; hi = frozenWin.hi; step = frozenWin.step; }
-    else {
-      lo = Math.min.apply(null, pts) - 3; hi = Math.max.apply(null, pts) + 3;
-      if (hi - lo < 12) { var mid = (hi + lo) / 2; lo = mid - 6; hi = mid + 6; }
-      step = 10;
-      for (var i = 0; i < STEPS.length; i++) if ((hi - lo) / STEPS[i] <= 10) { step = STEPS[i]; break; }
-      lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
-    }
-    scaleWin = { lo: lo, hi: hi, step: step };
-    var span = hi - lo;
-    function pct(x) { return ((x - lo) / span) * 100; }
+    var w = $("scaleTrack").clientWidth || 600;
+    var span = Math.min(30, Math.max(12, Math.round(w / PX_PER_LU / 2) * 2));
+    var lo = v.target - span / 2, hi = v.target + span / 2;
+    scaleWin = { lo: lo, hi: hi, span: span, pxPerLU: w / span };
+    function raw(x) { return ((x - lo) / span) * 100; }
+    function clamp(p) { return Math.min(100, Math.max(0, p)); }
+
+    var step = 10;
+    for (var i = 0; i < STEPS.length; i++) if (span / STEPS[i] <= 12) { step = STEPS[i]; break; }
+    var div = MINOR_DIV[step], minor = step / div;
 
     var ticks = $("scaleTicks"), nums = $("scaleNums");
     ticks.textContent = ""; nums.textContent = "";
-    var minor = step / MINOR_DIV[step];
-    for (var x = lo; x <= hi + 1e-9; x += minor) {
-      var isMajor = Math.abs(x / step - Math.round(x / step)) < 1e-9;
+    for (var k = Math.ceil(lo / minor - 1e-9), kEnd = Math.floor(hi / minor + 1e-9); k <= kEnd; k++) {
+      var x = k * minor, isMajor = k % div === 0, p = raw(x);
       var tk = document.createElement("i");
       tk.className = "tick" + (isMajor ? " tick--major" : "");
-      setPos(tk, pct(x));
+      setPos(tk, p);
       ticks.appendChild(tk);
-      if (isMajor) {
+      if (isMajor && p > 2 && p < 98) {
         var nm = document.createElement("span");
-        nm.textContent = String(Math.round(x)).replace("-", "−");
-        setPos(nm, pct(x));
+        nm.textContent = String(Math.round(x)).replace("-", "\u2212");
+        setPos(nm, p);
         nums.appendChild(nm);
       }
     }
 
     var band = $("scaleBand");
     if (v.tolerance !== null) {
-      band.hidden = false;
-      setPos(band, pct(v.target - v.tolerance));
-      band.style.width = (pct(v.target + v.tolerance) - pct(v.target - v.tolerance)) + "%";
+      var bl = clamp(raw(v.target - v.tolerance)), br = clamp(raw(v.target + v.tolerance));
+      band.hidden = false; setPos(band, bl); band.style.width = (br - bl) + "%";
     } else band.hidden = true;
 
     var mkTarget = $("mkTarget"), mkInput = $("mkInput"), mkResult = $("mkResult"), mkSafe = $("mkSafe");
-    var spanEl = $("scaleSpan");
-    var tagT = mkTarget.firstElementChild;
-    setPos(mkTarget, pct(v.target)); mkTarget.hidden = false;
+    var spanEl = $("scaleSpan"), tagT = mkTarget.firstElementChild;
+    mkTarget.hidden = false; setPos(mkTarget, 50);
+
+    // place a marker at value x; off-screen values stick to the edge with an arrow and the value
+    function place(el, x, key) {
+      var p = raw(x), off = p < 0 ? -1 : (p > 100 ? 1 : 0), label = t(key);
+      setPos(el, clamp(p));
+      el.classList.toggle("scale__mark--edge-l", off < 0);
+      el.classList.toggle("scale__mark--edge-r", off > 0);
+      el.firstElementChild.textContent = off < 0 ? "\u2039 " + label + " " + fmt(x) : (off > 0 ? label + " " + fmt(x) + " \u203A" : label);
+    }
 
     var haveIn = v.input !== null;
     mkInput.hidden = !haveIn; mkResult.hidden = true; mkSafe.hidden = v.safe === null; spanEl.hidden = true;
@@ -192,24 +196,24 @@
     mkSafe.className = "scale__mark scale__mark--safe scale__mark--bottom";
 
     if (haveIn) {
-      setPos(mkInput, pct(v.input));
-      if (Math.abs(pct(v.input) - pct(v.target)) < 12) mkTarget.className = "scale__mark scale__mark--target scale__mark--bottom";
-      var same = Math.abs(v.result - v.target) < 0.05;
-      if (same) {
-        tagT.textContent = t("scale.target") + " · " + t("scale.result");
+      place(mkInput, v.input, "scale.input");
+      if (Math.abs(raw(v.input) - 50) < 12) mkTarget.className = "scale__mark scale__mark--target scale__mark--bottom";
+      if (Math.abs(v.result - v.target) < 0.05) {
+        tagT.textContent = t("scale.target") + " \u00B7 " + t("scale.result");
       } else {
-        mkResult.hidden = false; setPos(mkResult, pct(v.result));
+        mkResult.hidden = false; place(mkResult, v.result, "scale.result");
       }
-      var a = Math.min(v.input, v.result), b = Math.max(v.input, v.result);
-      if (b - a > 0.001) {
-        spanEl.hidden = false; setPos(spanEl, pct(a)); spanEl.style.width = (pct(b) - pct(a)) + "%";
+      var a1 = clamp(raw(Math.min(v.input, v.result))), b1 = clamp(raw(Math.max(v.input, v.result)));
+      if (b1 - a1 > 0.05) {
+        spanEl.hidden = false; setPos(spanEl, a1); spanEl.style.width = (b1 - a1) + "%";
         spanEl.className = "scale__span" + (v.warn ? " scale__span--warn" : "");
       }
       if (v.safe !== null) {
-        setPos(mkSafe, pct(v.safe));
+        place(mkSafe, v.safe, "scale.safe");
         // keep the MAX tag clear of the target tag when both sit below the bar
-        if (mkTarget.classList.contains("scale__mark--bottom") && Math.abs(pct(v.safe) - pct(v.target)) < 14) {
+        if (mkTarget.classList.contains("scale__mark--bottom") && Math.abs(raw(v.safe) - 50) < 14) {
           mkSafe.className = "scale__mark scale__mark--safe scale__mark--top";
+          place(mkSafe, v.safe, "scale.safe");
         }
       }
     }
@@ -456,7 +460,7 @@
     if (locked) {
       ["tabindex", "role", "aria-valuemin", "aria-valuemax", "aria-valuenow", "aria-valuetext", "aria-label"].forEach(function (n) { mk.removeAttribute(n); });
     } else {
-      var v = readField("cTarget", LUFS_MIN, LUFS_MAX, false, true).value;
+      var v = currentTarget();
       mk.setAttribute("tabindex", "0");
       mk.setAttribute("role", "slider");
       mk.setAttribute("aria-label", t("scale.sliderLabel"));
@@ -488,43 +492,51 @@
     } else { locked = true; render(); }
   }
 
-  function setTargetFromValue(v, win) {
-    var lo = Math.max(LUFS_MIN, win ? win.lo : LUFS_MIN), hi = Math.min(LUFS_MAX, win ? win.hi : LUFS_MAX);
-    v = Math.min(hi, Math.max(lo, Math.round(v * 10) / 10));
+  function currentTarget() { return readField("cTarget", LUFS_MIN, LUFS_MAX, false, true).value; }
+
+  function setTargetFromValue(v) {
+    v = Math.min(LUFS_MAX, Math.max(LUFS_MIN, Math.round(v * 10) / 10));
     $("cTarget").value = fmt(v);
     save("cTarget", $("cTarget").value);
     render();
   }
 
-  function valueAtPointer(e) {
-    var r = $("scaleTrack").getBoundingClientRect(), w = frozenWin || scaleWin;
-    return w.lo + Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * (w.hi - w.lo);
-  }
-
   function initScaleDrag() {
-    var track = $("scaleTrack");
+    var track = $("scaleTrack"), scaleEl = $("scale");
+    // dragging the scale right lowers the value under the fixed pointer, like turning a wheel
     track.addEventListener("pointerdown", function (e) {
       if (locked || e.button > 0 || !scaleWin) return;
-      dragging = true;
-      frozenWin = { lo: scaleWin.lo, hi: scaleWin.hi, step: scaleWin.step };
+      var cur = currentTarget();
+      if (cur === null) return;
+      dragging = true; dragStart = { x: e.clientX, target: cur };
+      scaleEl.classList.add("scale--dragging");
       track.setPointerCapture(e.pointerId);
-      setTargetFromValue(valueAtPointer(e), frozenWin);
       e.preventDefault();
     });
     track.addEventListener("pointermove", function (e) {
-      if (dragging) setTargetFromValue(valueAtPointer(e), frozenWin);
+      if (dragging) setTargetFromValue(dragStart.target - (e.clientX - dragStart.x) / scaleWin.pxPerLU);
     });
     function end() {
       if (!dragging) return;
-      dragging = false; frozenWin = null;
-      render();
+      dragging = false; dragStart = null;
+      scaleEl.classList.remove("scale--dragging");
       if (!locked) $("mkTarget").focus();
     }
     track.addEventListener("pointerup", end);
     track.addEventListener("pointercancel", end);
+    // mouse wheel / trackpad: one wheel notch (100 px) = 1 dB
+    track.addEventListener("wheel", function (e) {
+      if (locked) return;
+      var cur = currentTarget();
+      if (cur === null) return;
+      var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (e.deltaMode === 1) d *= 33;
+      e.preventDefault();
+      setTargetFromValue(cur + d / 100);
+    }, { passive: false });
     $("mkTarget").addEventListener("keydown", function (e) {
       if (locked) return;
-      var big = e.shiftKey ? 1 : 0.1, cur = readField("cTarget", LUFS_MIN, LUFS_MAX, false, true).value, d = 0;
+      var big = e.shiftKey ? 1 : 0.1, cur = currentTarget(), d = 0;
       if (cur === null) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowDown") d = -big;
       else if (e.key === "ArrowRight" || e.key === "ArrowUp") d = big;
@@ -532,7 +544,7 @@
       else if (e.key === "PageUp") d = 1;
       else return;
       e.preventDefault();
-      setTargetFromValue(cur + d, null);
+      setTargetFromValue(cur + d);
       $("mkTarget").focus();
     });
     $("lockBtn").addEventListener("click", onLockClick);
