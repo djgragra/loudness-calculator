@@ -69,7 +69,7 @@ Tests (Node 18+): `node --test dev/*.test.js`
 - `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests and the icon generator; not deployed.
 
-Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` on every release.
+Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.1`), tags `v2026.9.1`, as in the other OnAir Garage apps.
 
 ## Credits
 
