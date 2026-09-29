@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "2026.9.4";
+  var VERSION = "2026.9.5";
   var STORE = "com.onairgarage.loudnesscalculator.";
   var Calc = window.LoudnessCalc;
   var Std = window.LoudnessStandards;
@@ -29,6 +29,10 @@
   if (I18n.langs.indexOf(state.lang) === -1) state.lang = "en";   // always opens in English; a manual choice is remembered
   if (["auto", "light", "dark"].indexOf(state.theme) === -1) state.theme = "auto";
   if (state.std !== "custom" && !Std.byId(state.std)) state.std = "ebu";
+  var locked = state.std !== "custom";   // presets lock the target on the scale; Custom unlocks it
+  var scaleWin = null;                   // { lo, hi, step } of the scale as drawn
+  var frozenWin = null;                  // window kept fixed while dragging, so the scale does not rescale under the pointer
+  var dragging = false;
 
   function t() { return I18n.t.apply(null, [state.lang].concat([].slice.call(arguments))); }
 
@@ -136,11 +140,16 @@
     if (v.tolerance !== null) pts.push(v.target - v.tolerance, v.target + v.tolerance);
     if (v.input !== null) pts.push(v.input, v.result);
     if (v.safe !== null) pts.push(v.safe);
-    var lo = Math.min.apply(null, pts) - 3, hi = Math.max.apply(null, pts) + 3;
-    if (hi - lo < 12) { var mid = (hi + lo) / 2; lo = mid - 6; hi = mid + 6; }
-    var step = 10;
-    for (var i = 0; i < STEPS.length; i++) if ((hi - lo) / STEPS[i] <= 10) { step = STEPS[i]; break; }
-    lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    var lo, hi, step;
+    if (frozenWin) { lo = frozenWin.lo; hi = frozenWin.hi; step = frozenWin.step; }
+    else {
+      lo = Math.min.apply(null, pts) - 3; hi = Math.max.apply(null, pts) + 3;
+      if (hi - lo < 12) { var mid = (hi + lo) / 2; lo = mid - 6; hi = mid + 6; }
+      step = 10;
+      for (var i = 0; i < STEPS.length; i++) if ((hi - lo) / STEPS[i] <= 10) { step = STEPS[i]; break; }
+      lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    }
+    scaleWin = { lo: lo, hi: hi, step: step };
     var span = hi - lo;
     function pct(x) { return ((x - lo) / span) * 100; }
 
@@ -264,6 +273,11 @@
   }
 
   function render() {
+    renderMain();
+    syncLock();
+  }
+
+  function renderMain() {
     var lufs = readField("lufsIn", LUFS_MIN, LUFS_MAX, false, true);
     var tp = readField("tpIn", TP_MIN, TP_MAX, true);
     var custom = { target: readField("cTarget", LUFS_MIN, LUFS_MAX, false, true), limit: readField("cLimit", TP_MIN, TP_MAX, true) };
@@ -425,6 +439,105 @@
     if (target && target.scrollIntoView) target.scrollIntoView();
   }
 
+  // ---------- movable target (scale) ----------
+  function targetName() {
+    var s = Std.byId(state.std);
+    return s ? s.name : "";
+  }
+
+  function syncLock() {
+    var btn = $("lockBtn");
+    btn.setAttribute("aria-checked", locked ? "true" : "false");
+    btn.setAttribute("aria-label", t("scale.lock") + ": " + t(locked ? "lock.locked" : "lock.unlocked"));
+    $("lockText").textContent = t(locked ? "lock.locked" : "lock.unlocked");
+    $("scale").classList.toggle("scale--editable", !locked);
+    $("lockHint").textContent = !locked ? t("lock.hintFree") : (state.std === "custom" ? t("lock.hintCustomLocked") : t("lock.hintLocked", targetName()));
+    var mk = $("mkTarget");
+    if (locked) {
+      ["tabindex", "role", "aria-valuemin", "aria-valuemax", "aria-valuenow", "aria-valuetext", "aria-label"].forEach(function (n) { mk.removeAttribute(n); });
+    } else {
+      var v = readField("cTarget", LUFS_MIN, LUFS_MAX, false, true).value;
+      mk.setAttribute("tabindex", "0");
+      mk.setAttribute("role", "slider");
+      mk.setAttribute("aria-label", t("scale.sliderLabel"));
+      mk.setAttribute("aria-valuemin", String(LUFS_MIN));
+      mk.setAttribute("aria-valuemax", String(LUFS_MAX));
+      if (v !== null) { mk.setAttribute("aria-valuenow", String(v)); mk.setAttribute("aria-valuetext", fmt(v) + " LUFS"); }
+    }
+  }
+
+  function setStandard(id) {
+    state.std = id;
+    save("std", id);
+    locked = id !== "custom";
+    $("stdSel").value = id;
+    render();
+    if (lastMeasure) showMeasureResult();
+  }
+
+  function onLockClick() {
+    if (locked) {
+      if (state.std !== "custom") {
+        // hand the preset's values to Custom, so the target can be moved from where it is
+        var s = Std.byId(state.std);
+        $("cTarget").value = fmt(s.target);
+        $("cLimit").value = s.tpLimit === null ? "" : fmt(s.tpLimit);
+        save("cTarget", $("cTarget").value); save("cLimit", $("cLimit").value);
+        setStandard("custom");
+      } else { locked = false; render(); }
+    } else { locked = true; render(); }
+  }
+
+  function setTargetFromValue(v, win) {
+    var lo = Math.max(LUFS_MIN, win ? win.lo : LUFS_MIN), hi = Math.min(LUFS_MAX, win ? win.hi : LUFS_MAX);
+    v = Math.min(hi, Math.max(lo, Math.round(v * 10) / 10));
+    $("cTarget").value = fmt(v);
+    save("cTarget", $("cTarget").value);
+    render();
+  }
+
+  function valueAtPointer(e) {
+    var r = $("scaleTrack").getBoundingClientRect(), w = frozenWin || scaleWin;
+    return w.lo + Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * (w.hi - w.lo);
+  }
+
+  function initScaleDrag() {
+    var track = $("scaleTrack");
+    track.addEventListener("pointerdown", function (e) {
+      if (locked || e.button > 0 || !scaleWin) return;
+      dragging = true;
+      frozenWin = { lo: scaleWin.lo, hi: scaleWin.hi, step: scaleWin.step };
+      track.setPointerCapture(e.pointerId);
+      setTargetFromValue(valueAtPointer(e), frozenWin);
+      e.preventDefault();
+    });
+    track.addEventListener("pointermove", function (e) {
+      if (dragging) setTargetFromValue(valueAtPointer(e), frozenWin);
+    });
+    function end() {
+      if (!dragging) return;
+      dragging = false; frozenWin = null;
+      render();
+      if (!locked) $("mkTarget").focus();
+    }
+    track.addEventListener("pointerup", end);
+    track.addEventListener("pointercancel", end);
+    $("mkTarget").addEventListener("keydown", function (e) {
+      if (locked) return;
+      var big = e.shiftKey ? 1 : 0.1, cur = readField("cTarget", LUFS_MIN, LUFS_MAX, false, true).value, d = 0;
+      if (cur === null) return;
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") d = -big;
+      else if (e.key === "ArrowRight" || e.key === "ArrowUp") d = big;
+      else if (e.key === "PageDown") d = -1;
+      else if (e.key === "PageUp") d = 1;
+      else return;
+      e.preventDefault();
+      setTargetFromValue(cur + d, null);
+      $("mkTarget").focus();
+    });
+    $("lockBtn").addEventListener("click", onLockClick);
+  }
+
   // ---------- install as an app ----------
   var deferredInstall = null;   // Chromium's beforeinstallprompt event, when the browser offers one
 
@@ -463,7 +576,8 @@
     ["cTarget", "cLimit"].forEach(function (id) {
       $(id).addEventListener("input", function () { save(id, $(id).value); render(); });
     });
-    $("stdSel").addEventListener("change", function () { state.std = $("stdSel").value; save("std", state.std); render(); if (lastMeasure) showMeasureResult(); });
+    $("stdSel").addEventListener("change", function () { setStandard($("stdSel").value); });
+    initScaleDrag();
     $("langSel").addEventListener("change", function () { state.lang = $("langSel").value; save("lang", state.lang); applyLang(); });
     $("themeSel").addEventListener("change", function () { state.theme = $("themeSel").value; save("theme", state.theme); applyTheme(); });
     if (window.matchMedia) {

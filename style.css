@@ -260,3 +260,15 @@ select { cursor: pointer; }
 .help__body li { font-size: 18px; margin: 4px 0; }
 .help__sources li { font-size: 17px; }
 .measure__status { white-space: pre-line; }
+
+/* ---------- movable target on the scale ---------- */
+.scale__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; }
+.scale__head .scale__label { margin: 0; }
+.lock { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 15px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; min-height: 40px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--face2); color: var(--ink2); cursor: pointer; }
+.lock[aria-checked="false"] { border-color: var(--accent); color: var(--accent); }
+.lock[aria-checked="true"] .lock__ico--open, .lock[aria-checked="false"] .lock__ico--closed { display: none; }
+.scale__hint { margin: 12px 0 0; font-size: 15px; color: var(--ink2); }
+.scale--editable .scale__track { cursor: ew-resize; touch-action: none; }
+.scale--editable .scale__mark--target::after { content: ""; position: absolute; left: -10px; top: 50%; width: 17px; height: 17px; margin-top: -8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--face); box-shadow: 0 0 0 1px var(--accent); }
+.scale__mark--target:focus-visible { outline: none; }
+.scale__mark--target:focus-visible .scale__tag { outline: 2px solid var(--focus); outline-offset: 2px; }

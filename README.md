@@ -14,7 +14,7 @@ Enter the integrated loudness of a file (LUFS, from any ITU-R BS.1770 meter), op
 - **Gain to apply** = target − measured loudness (dB).
 - **Resulting loudness** and **resulting true peak** (measured true peak + gain).
 - A **warning** if the gain pushes the true peak over the standard's limit, with the highest gain you can apply without a limiter.
-- A **scale** with input, target (and tolerance band) and result.
+- A **scale** with input, target (and tolerance band) and result. The target can be moved on the scale (drag, or arrow keys): it is locked while a preset standard is selected; the lock switch unlocks it and switches to Custom, and choosing Custom unlocks it automatically.
 - **Platform playback**: the gain a streaming platform would apply to your file as it is.
 - A custom target / true-peak limit for house or client specs.
 - **Measure from a file**: if you don't know the values, load an audio file; loudness and true peak are measured in the browser and copied into the fields.
@@ -103,7 +103,7 @@ Tests (Node 18+): `node --test dev/*.test.js`
 - `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests, validation scripts and the icon generator; not deployed.
 
-Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.4`), tags `v2026.9.4`, as in the other OnAir Garage apps.
+Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.5`), tags `v2026.9.5`, as in the other OnAir Garage apps.
 
 ## Credits
 
