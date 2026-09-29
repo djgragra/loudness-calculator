@@ -50,6 +50,7 @@
     $("langSel").setAttribute("aria-label", t("ctl.language"));
     buildStandardSelect();
     render();
+    if (lastMeasure) showMeasureResult();
   }
 
   function applyTheme() {
@@ -325,6 +326,98 @@
     renderPlayback(isCustom ? { playback: null } : s, lufs.value, tpVal);
   }
 
+  // ---------- measure from a file ----------
+  var Measure = window.LoudnessMeasure;
+  var measureRun = 0;
+  var lastMeasure = null;   // { name, lossy, result } kept so the text follows a language change
+
+  function chanLabel(n) { return n === 1 ? t("meas.chan.mono") : (n === 2 ? t("meas.chan.stereo") : t("meas.chan.n", n)); }
+  function fmtDuration(sec) {
+    var s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+    function p(x) { return (x < 10 ? "0" : "") + x; }
+    return h > 0 ? h + ":" + p(m) + ":" + p(r) : m + ":" + p(r);
+  }
+  function fmtKHz(hz) {
+    var v = String(Math.round(hz / 100) / 10);
+    return state.lang === "en" ? v : v.replace(".", ",");
+  }
+  function setMeasStatus(kind, msg) {
+    var el = $("measStatus");
+    el.textContent = msg;
+    el.setAttribute("data-kind", kind);
+  }
+  function setMeasBusy(busy) {
+    $("fileBtn").disabled = busy;
+    $("fileCancel").hidden = !busy;
+    $("measProg").hidden = !busy;
+  }
+  function addNote(list, text) {
+    var li = document.createElement("li"); li.textContent = text; list.appendChild(li);
+  }
+
+  function showMeasureResult() {
+    var notes = $("measNotes"); notes.textContent = "";
+    if (!lastMeasure) return;
+    var r = lastMeasure.result;
+    if (r.integrated === null) { setMeasStatus("error", t("meas.err.silent")); return; }
+    var lines = [
+      t("meas.done", lastMeasure.name),
+      t("meas.summary", fmtDuration(r.duration), fmtKHz(r.sampleRate) + " kHz", chanLabel(r.channels)),
+      t("meas.values", fmt(r.integrated), r.truePeak === null ? "\u2014" : fmt(r.truePeak), r.samplePeak === null ? "\u2014" : fmt(r.samplePeak)),
+      t("meas.filled")
+    ];
+    setMeasStatus("ok", lines.join("\n"));
+    addNote(notes, t("meas.note.full"));
+    if (r.resampled) addNote(notes, t("meas.note.resampled", fmtKHz(r.fileRate), fmtKHz(r.sampleRate)));
+    else if (r.rateUnknown) addNote(notes, t("meas.note.rateUnknown", fmtKHz(r.sampleRate)));
+    if (r.assumedLayout) addNote(notes, t("meas.note.layout", r.channels));
+    if (r.channels === 1) addNote(notes, t("meas.note.mono"));
+    if (r.channels === 6) addNote(notes, t("meas.note.lfe"));
+    if (lastMeasure.lossy) addNote(notes, t("meas.note.lossy"));
+  }
+
+  function measureFile(file) {
+    var run = ++measureRun;
+    lastMeasure = null;
+    $("measNotes").textContent = "";
+    setMeasBusy(true);
+    $("measProg").removeAttribute("value");
+    setMeasStatus("busy", t("meas.decoding", file.name));
+    Measure.measureFile(file, function (st) {
+      if (run !== measureRun) return;
+      if (st.phase === "decode") {
+        $("measProg").removeAttribute("value");
+        setMeasStatus("busy", t("meas.decoding", file.name));
+      } else {
+        var pct = Math.round(st.fraction * 100);
+        $("measProg").value = pct;
+        setMeasStatus("busy", t("meas.analysing", file.name, pct));
+      }
+    }).then(function (result) {
+      if (run !== measureRun) return;
+      setMeasBusy(false);
+      lastMeasure = { name: file.name, lossy: Measure.isLossy(file.name), result: result };
+      if (result.integrated !== null) {
+        $("lufsIn").value = fmt(result.integrated);
+        $("tpIn").value = result.truePeak === null ? "" : fmt(result.truePeak);
+        render();
+      }
+      showMeasureResult();
+    }).catch(function (e) {
+      if (run !== measureRun) return;
+      setMeasBusy(false);
+      var known = ["tooBig", "tooLong", "decode", "analyse", "unsupported", "read"];
+      setMeasStatus("error", t("meas.err." + (known.indexOf(e && e.code) !== -1 ? e.code : "decode")));
+    });
+  }
+
+  function openHelp(anchor) {
+    var dlg = $("helpDlg");
+    if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute("open", "");
+    var target = anchor ? $(anchor) : null;
+    if (target && target.scrollIntoView) target.scrollIntoView();
+  }
+
   // ---------- wiring ----------
   function init() {
     $("ver").textContent = "v" + VERSION;
@@ -350,7 +443,17 @@
     }
 
     var dlg = $("helpDlg");
-    $("helpBtn").addEventListener("click", function () { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); });
+    $("helpBtn").addEventListener("click", function () { openHelp(null); });
+    $("measHelp").addEventListener("click", function () { openHelp("helpLimits"); });
+    $("fileBtn").addEventListener("click", function () { $("fileIn").click(); });
+    $("fileIn").addEventListener("change", function () {
+      var f = $("fileIn").files && $("fileIn").files[0];
+      $("fileIn").value = "";
+      if (f) measureFile(f);
+    });
+    $("fileCancel").addEventListener("click", function () {
+      measureRun++; Measure.cancel(); setMeasBusy(false); setMeasStatus("busy", "");
+    });
     $("helpClose").addEventListener("click", function () { dlg.close(); });
     dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
 

@@ -218,3 +218,20 @@ select { cursor: pointer; }
 @media (prefers-reduced-motion: no-preference) {
   .scale__span, .scale__mark, .scale__band { transition: left .2s ease, width .2s ease; }
 }
+
+/* ---------- measure from file ---------- */
+.measure { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.measure__title { margin: 0; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; }
+.measure__hint { margin: 2px 0 10px; color: var(--ink2); font-size: 16px; }
+.measure__row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.linkbtn { font: inherit; background: none; border: 0; padding: 8px 0; min-height: 44px; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.measure__prog { width: 100%; height: 10px; margin-top: 10px; accent-color: var(--accent); }
+.measure__status { margin: 10px 0 0; font-size: 17px; }
+.measure__status[data-kind="error"] { color: var(--warn); font-weight: 600; }
+.measure__status:empty { display: none; }
+.measure__notes { margin: 6px 0 0; padding-left: 18px; color: var(--ink2); font-size: 15px; }
+.measure__notes:empty { display: none; }
+.help__body ul { margin: 4px 0 0; padding-left: 20px; }
+.help__body li { font-size: 18px; margin: 4px 0; }
+.help__sources li { font-size: 17px; }
+.measure__status { white-space: pre-line; }

@@ -102,6 +102,19 @@
     </section>
 
     <form class="inputs" id="form" autocomplete="off" novalidate>
+      <div class="measure">
+        <h2 class="measure__title" data-i18n="meas.title">Measure from a file</h2>
+        <p class="measure__hint" data-i18n="meas.hint">Don't know the values? Load an audio file. It is analysed on this device and never uploaded.</p>
+        <div class="measure__row">
+          <button type="button" id="fileBtn" class="btn" data-i18n="meas.choose">Choose audio file…</button>
+          <button type="button" id="fileCancel" class="btn btn--ghost" hidden data-i18n="meas.cancel">Cancel</button>
+          <button type="button" id="measHelp" class="linkbtn" data-i18n="meas.details">Method, sources and limits</button>
+          <input type="file" id="fileIn" accept="audio/*,.wav,.flac,.mp3,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+        </div>
+        <progress id="measProg" class="measure__prog" max="100" value="0" hidden></progress>
+        <p class="measure__status" id="measStatus" role="status"></p>
+        <ul class="measure__notes" id="measNotes"></ul>
+      </div>
       <div class="field">
         <label for="lufsIn" data-i18n="in.lufs">Integrated loudness</label>
         <div class="field__box">
@@ -190,6 +203,21 @@
       <h3 data-i18n="help.h7">Platform playback</h3><p data-i18n="help.p7"></p>
       <h3 data-i18n="help.h8">Custom target</h3><p data-i18n="help.p8"></p>
       <h3 data-i18n="help.h9">Language, theme, offline</h3><p data-i18n="help.p9"></p>
+      <h3 id="helpMeasure" data-i18n="help.hMeasure">Measure from a file</h3><p data-i18n="help.pMeasure"></p>
+      <h3 id="helpLimits" data-i18n="help.hLimits">Measurement method and limits</h3>
+      <ul>
+        <li data-i18n="help.l1"></li><li data-i18n="help.l2"></li><li data-i18n="help.l3"></li><li data-i18n="help.l4"></li>
+        <li data-i18n="help.l5"></li><li data-i18n="help.l6"></li><li data-i18n="help.l7"></li>
+      </ul>
+      <h3 id="helpSources" data-i18n="help.hSources">Sources</h3>
+      <ul class="help__sources">
+        <li><a href="https://www.itu.int/rec/R-REC-BS.1770" target="_blank" rel="noopener">ITU-R BS.1770</a> — <span data-i18n="src.itu"></span></li>
+        <li><a href="https://tech.ebu.ch/docs/tech/tech3341.pdf" target="_blank" rel="noopener">EBU Tech 3341</a> — <span data-i18n="src.tech3341"></span></li>
+        <li><a href="https://tech.ebu.ch/publications/ebu_loudness_test_set" target="_blank" rel="noopener">EBU loudness test set</a> — <span data-i18n="src.testset"></span></li>
+        <li><a href="https://tech.ebu.ch/docs/r/r128.pdf" target="_blank" rel="noopener">EBU R 128</a> — <span data-i18n="src.r128"></span></li>
+        <li><a href="https://www.atsc.org/wp-content/uploads/2015/03/Techniques-for-establishing-and-maintaining-audio-loudness.pdf" target="_blank" rel="noopener">ATSC A/85:2013</a> — <span data-i18n="src.atsc"></span></li>
+        <li><a href="https://support.spotify.com/us/artists/article/loudness-normalization/" target="_blank" rel="noopener">Spotify Support</a> — <span data-i18n="src.spotify"></span></li>
+      </ul>
       <h3 data-i18n="help.h10">Privacy</h3><p data-i18n="help.p10"></p>
     </div>
   </dialog>
@@ -203,6 +231,8 @@
   <script src="calc.js"></script>
   <script src="standards.js"></script>
   <script src="i18n.js"></script>
+  <script src="analyzer.js"></script>
+  <script src="measure.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
