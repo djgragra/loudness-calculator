@@ -46,6 +46,7 @@
       "warn.body": "Applying {0} dB would raise the true peak to {1} dBTP, {2} dB above the {3} dBTP limit. Without a limiter, the most you can add is {4} dB, giving {5} LUFS.",
       "warn.body.negative": "Applying {0} dB would leave the true peak at {1} dBTP, {2} dB above the {3} dBTP limit. To meet the limit the level must be lowered by at least {4} dB, giving {5} LUFS.",
 
+      "warn.body.already": "The file already exceeds the true-peak limit before any gain: it reads {0} dBTP, {1} dB above the {2} dBTP limit, so applying 0 dB does not fix it. The level has to be lowered by at least {3} dB, giving {4} LUFS.",
       "in.lufs": "Integrated loudness",
       "in.lufsHint": "Measured value, LUFS (e.g. −18.4). The minus sign is optional: 18.4 counts as −18.4.",
       "in.sign": "Change sign (plus / minus)",
@@ -234,6 +235,7 @@
       "warn.body": "Applicando {0} dB il true peak salirebbe a {1} dBTP, {2} dB sopra il limite di {3} dBTP. Senza limiter puoi aggiungere al massimo {4} dB, ottenendo {5} LUFS.",
       "warn.body.negative": "Applicando {0} dB il true peak resterebbe a {1} dBTP, {2} dB sopra il limite di {3} dBTP. Per rispettare il limite il livello va abbassato di almeno {4} dB, ottenendo {5} LUFS.",
 
+      "warn.body.already": "Il file supera già il limite di true peak prima di qualsiasi gain: legge {0} dBTP, {1} dB sopra il limite di {2} dBTP, quindi applicare 0 dB non lo risolve. Il livello va abbassato di almeno {3} dB, ottenendo {4} LUFS.",
       "in.lufs": "Loudness integrato",
       "in.lufsHint": "Valore misurato, LUFS (es. −18,4). Il segno meno è facoltativo: 18,4 vale −18,4.",
       "in.sign": "Cambia segno (più / meno)",
@@ -422,6 +424,7 @@
       "warn.body": "Aplicar {0} dB subiría el true peak a {1} dBTP, {2} dB por encima del límite de {3} dBTP. Sin limitador, lo máximo que puedes añadir es {4} dB, con {5} LUFS.",
       "warn.body.negative": "Aplicar {0} dB dejaría el true peak en {1} dBTP, {2} dB por encima del límite de {3} dBTP. Para cumplir el límite hay que bajar el nivel al menos {4} dB, con {5} LUFS.",
 
+      "warn.body.already": "El archivo ya supera el límite de true peak antes de cualquier ganancia: marca {0} dBTP, {1} dB por encima del límite de {2} dBTP, así que aplicar 0 dB no lo resuelve. Hay que bajar el nivel al menos {3} dB, con {4} LUFS.",
       "in.lufs": "Loudness integrado",
       "in.lufsHint": "Valor medido, LUFS (p. ej. −18,4). El signo menos es opcional: 18,4 cuenta como −18,4.",
       "in.sign": "Cambiar signo (más / menos)",

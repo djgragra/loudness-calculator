@@ -327,9 +327,14 @@
     if (r.tpOver) {
       setStatus("warn.title", null, "warn");
       var neg = r.maxSafeGain < 0;
-      $("warnBody").textContent = t(neg ? "warn.body.negative" : "warn.body",
-        fmt(r.gain, true), fmt(r.resultTp), fmt(r.overBy), fmt(s.tpLimit),
-        neg ? fmt(-r.maxSafeGain) : fmt(r.maxSafeGain, true), fmt(r.maxSafeLufs));
+      if (Calc.round1(r.gain) === 0) {
+        // no gain at all: the file itself is over the limit
+        $("warnBody").textContent = t("warn.body.already", fmt(tpVal), fmt(r.overBy), fmt(s.tpLimit), fmt(-r.maxSafeGain), fmt(r.maxSafeLufs));
+      } else {
+        $("warnBody").textContent = t(neg ? "warn.body.negative" : "warn.body",
+          fmt(r.gain, true), fmt(r.resultTp), fmt(r.overBy), fmt(s.tpLimit),
+          neg ? fmt(-r.maxSafeGain) : fmt(r.maxSafeGain, true), fmt(r.maxSafeLufs));
+      }
       $("warn").hidden = false;
     } else if (r.withinTolerance) {
       setStatus("display.within", [fmt(s.tolerance).replace("−", "")], "ok");
