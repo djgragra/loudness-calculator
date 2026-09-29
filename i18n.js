@@ -109,7 +109,7 @@
       "help.h8": "Custom target",
       "help.p8": "Choose “Custom…” to enter your own target and optional true-peak limit, for a house standard or a client's spec.",
       "help.h9": "Language, theme, offline",
-      "help.p9": "The language follows your browser and can be changed at the top; so can the theme (Auto follows the system). Choices are saved on this device only. After the first visit the app works offline; when a new version is ready, a banner offers to reload.",
+      "help.p9": "The app always opens in English. You can change the language at the top, and your choice is remembered; the same goes for the theme (Auto follows the system). Choices are saved on this device only. After the first visit the app works offline; when a new version is ready, a banner offers to reload.",
       "help.h10": "Privacy",
       "help.p10": "Everything runs in your browser. No data is sent anywhere, and fonts are served from this site.",
 
@@ -273,7 +273,7 @@
       "help.h8": "Target personalizzato",
       "help.p8": "Scegli «Personalizzato…» per inserire un tuo target e un limite di true peak facoltativo, per uno standard interno o le specifiche di un cliente.",
       "help.h9": "Lingua, tema, offline",
-      "help.p9": "La lingua segue il browser e si cambia in alto; così il tema (Auto segue il sistema). Le scelte restano solo su questo dispositivo. Dopo la prima visita l'app funziona offline; quando è pronta una nuova versione, un banner propone di ricaricare.",
+      "help.p9": "L'app si apre sempre in inglese. Puoi cambiare la lingua in alto e la scelta viene ricordata; lo stesso vale per il tema (Auto segue il sistema). Le scelte restano solo su questo dispositivo. Dopo la prima visita l'app funziona offline; quando è pronta una nuova versione, un banner propone di ricaricare.",
       "help.h10": "Privacy",
       "help.p10": "Tutto gira nel tuo browser. Nessun dato viene inviato altrove e i font sono serviti da questo sito.",
 
@@ -437,7 +437,7 @@
       "help.h8": "Objetivo personalizado",
       "help.p8": "Elige «Personalizado…» para introducir tu propio objetivo y un límite de true peak opcional, para un estándar interno o las especificaciones de un cliente.",
       "help.h9": "Idioma, tema, sin conexión",
-      "help.p9": "El idioma sigue al navegador y se cambia arriba; igual el tema (Auto sigue al sistema). Las elecciones se guardan solo en este dispositivo. Tras la primera visita la app funciona sin conexión; cuando hay una nueva versión, un aviso ofrece recargar.",
+      "help.p9": "La app siempre se abre en inglés. Puedes cambiar el idioma arriba y tu elección se recuerda; lo mismo con el tema (Auto sigue al sistema). Las elecciones se guardan solo en este dispositivo. Tras la primera visita la app funciona sin conexión; cuando hay una nueva versión, un aviso ofrece recargar.",
       "help.h10": "Privacidad",
       "help.p10": "Todo se ejecuta en tu navegador. No se envían datos a ningún sitio y las fuentes se sirven desde este sitio.",
 
@@ -500,15 +500,6 @@
   var LANGS = ["en", "it", "es"];
   var LANG_NAMES = { en: "English", it: "Italiano", es: "Español" };
 
-  // First supported language among the browser's preferences, else English.
-  function detect(prefs) {
-    for (var i = 0; i < prefs.length; i++) {
-      var code = String(prefs[i] || "").slice(0, 2).toLowerCase();
-      if (LANGS.indexOf(code) !== -1) return code;
-    }
-    return "en";
-  }
-
   function translate(lang, key) {
     var table = STRINGS[lang] || STRINGS.en;
     var s = table[key];
@@ -518,7 +509,7 @@
     return s;
   }
 
-  var api = { strings: STRINGS, langs: LANGS, names: LANG_NAMES, detect: detect, t: translate };
+  var api = { strings: STRINGS, langs: LANGS, names: LANG_NAMES, t: translate };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.LoudnessI18n = api;
 })(typeof self !== "undefined" ? self : this);

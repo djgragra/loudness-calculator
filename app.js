@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "2026.9.2";
+  var VERSION = "2026.9.3";
   var STORE = "com.onairgarage.loudnesscalculator.";
   var Calc = window.LoudnessCalc;
   var Std = window.LoudnessStandards;
@@ -26,7 +26,7 @@
     theme: load("theme", "auto"),
     std: load("std", "ebu")
   };
-  if (I18n.langs.indexOf(state.lang) === -1) state.lang = I18n.detect(navigator.languages || [navigator.language]);
+  if (I18n.langs.indexOf(state.lang) === -1) state.lang = "en";   // always opens in English; a manual choice is remembered
   if (["auto", "light", "dark"].indexOf(state.theme) === -1) state.theme = "auto";
   if (state.std !== "custom" && !Std.byId(state.std)) state.std = "ebu";
 

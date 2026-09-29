@@ -19,7 +19,7 @@ Enter the integrated loudness of a file (LUFS, from any ITU-R BS.1770 meter), op
 - A custom target / true-peak limit for house or client specs.
 - **Measure from a file**: if you don't know the values, load an audio file; loudness and true peak are measured in the browser and copied into the fields.
 
-Languages: English (default), Italiano, Español. Theme: light, dark, or follow the system. Choices are stored only on the device (`localStorage`). No data leaves the browser; fonts are served locally.
+Languages: English, Italiano, Español. The app always opens in English; a manual change is remembered on the device. Theme: light, dark, or follow the system. Choices are stored only on the device (`localStorage`). No data leaves the browser; fonts are served locally.
 
 ## Standards and values
 
@@ -69,7 +69,7 @@ Tests (Node 18+): `node --test dev/*.test.js`
 - `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests and the icon generator; not deployed.
 
-Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.2`), tags `v2026.9.2`, as in the other OnAir Garage apps.
+Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.3`), tags `v2026.9.3`, as in the other OnAir Garage apps.
 
 ## Credits
 
