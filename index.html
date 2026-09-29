@@ -11,7 +11,11 @@
   <title>Loudness Target Calculator</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Loudness">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -39,6 +43,7 @@
           <option value="dark" data-i18n="theme.dark">Dark</option>
         </select>
       </label>
+      <button type="button" id="installBtn" class="btn" hidden data-i18n="inst.button">Install app</button>
       <button type="button" id="helpBtn" class="btn btn--ghost" data-i18n="ctl.help">How it works</button>
     </div>
   </header>
@@ -120,6 +125,7 @@
         <div class="field__box">
           <input id="lufsIn" type="text" inputmode="decimal" spellcheck="false" aria-describedby="lufsHint lufsErr">
           <span class="field__unit" data-i18n="unit.lufs">LUFS</span>
+          <button type="button" class="signbtn" data-sign="lufsIn" data-i18n-aria="in.sign" aria-label="Change sign (plus / minus)">±</button>
         </div>
         <p class="field__hint" id="lufsHint" data-i18n="in.lufsHint">Measured value, LUFS (e.g. −18.4)</p>
         <p class="field__err" id="lufsErr" role="alert" hidden data-i18n="in.err.lufs">Enter a value between −70 and 0 LUFS.</p>
@@ -130,6 +136,7 @@
         <div class="field__box">
           <input id="tpIn" type="text" inputmode="decimal" spellcheck="false" aria-describedby="tpHint tpErr">
           <span class="field__unit" data-i18n="unit.dbtp">dBTP</span>
+          <button type="button" class="signbtn" data-sign="tpIn" data-i18n-aria="in.sign" aria-label="Change sign (plus / minus)">±</button>
         </div>
         <p class="field__hint" id="tpHint" data-i18n="in.tpHint">Optional, dBTP (e.g. −1.2)</p>
         <p class="field__err" id="tpErr" role="alert" hidden data-i18n="in.err.tp">Enter a value between −70 and +12 dBTP, or leave empty.</p>
@@ -146,6 +153,7 @@
           <div class="field__box">
             <input id="cTarget" type="text" inputmode="decimal" spellcheck="false">
             <span class="field__unit" data-i18n="unit.lufs">LUFS</span>
+          <button type="button" class="signbtn" data-sign="cTarget" data-i18n-aria="in.sign" aria-label="Change sign (plus / minus)">±</button>
           </div>
           <p class="field__err" id="cTargetErr" role="alert" hidden data-i18n="in.err.customTarget">Enter a target between −70 and 0 LUFS.</p>
         </div>
@@ -154,6 +162,7 @@
           <div class="field__box">
             <input id="cLimit" type="text" inputmode="decimal" spellcheck="false" aria-describedby="cLimitHint">
             <span class="field__unit" data-i18n="unit.dbtp">dBTP</span>
+          <button type="button" class="signbtn" data-sign="cLimit" data-i18n-aria="in.sign" aria-label="Change sign (plus / minus)">±</button>
           </div>
           <p class="field__hint" id="cLimitHint" data-i18n="in.custom.limitHint">Leave empty for no limit</p>
           <p class="field__err" id="cLimitErr" role="alert" hidden data-i18n="in.err.customLimit">Enter a limit between −70 and +12 dBTP, or leave empty.</p>
@@ -168,6 +177,7 @@
       </div>
       <dl class="info__grid" id="infoGrid"></dl>
       <p class="info__note" id="infoNote"></p>
+      <p class="info__note info__note--measure" id="infoMeasure"></p>
       <div class="play" id="play" hidden>
         <h3 class="play__title" data-i18n="play.title">Platform playback</h3>
         <p class="play__body" id="playBody"></p>
@@ -185,7 +195,7 @@
     <span aria-hidden="true">·</span>
     <a href="mailto:hello@onairgarage.com" data-i18n="foot.contact">Contact</a>
     <span aria-hidden="true">·</span>
-    <span id="ver">v2026.9.3</span>
+    <span id="ver">v2026.9.4</span>
   </footer>
 
   <dialog id="helpDlg" class="help" aria-labelledby="helpTitle">
@@ -206,8 +216,12 @@
       <h3 id="helpMeasure" data-i18n="help.hMeasure">Measure from a file</h3><p data-i18n="help.pMeasure"></p>
       <h3 id="helpLimits" data-i18n="help.hLimits">Measurement method and limits</h3>
       <ul>
-        <li data-i18n="help.l1"></li><li data-i18n="help.l2"></li><li data-i18n="help.l3"></li><li data-i18n="help.l4"></li>
+        <li data-i18n="help.l1"></li><li data-i18n="help.l2"></li>
         <li data-i18n="help.l5"></li><li data-i18n="help.l6"></li><li data-i18n="help.l7"></li>
+      </ul>
+      <h3 id="helpValidation" data-i18n="help.hValid">Validation</h3>
+      <ul>
+        <li data-i18n="help.v1"></li><li data-i18n="help.v2"></li><li data-i18n="help.v3"></li><li data-i18n="help.v4"></li>
       </ul>
       <h3 id="helpSources" data-i18n="help.hSources">Sources</h3>
       <ul class="help__sources">
@@ -215,8 +229,13 @@
         <li><a href="https://tech.ebu.ch/docs/tech/tech3341.pdf" target="_blank" rel="noopener">EBU Tech 3341</a> — <span data-i18n="src.tech3341"></span></li>
         <li><a href="https://tech.ebu.ch/publications/ebu_loudness_test_set" target="_blank" rel="noopener">EBU loudness test set</a> — <span data-i18n="src.testset"></span></li>
         <li><a href="https://tech.ebu.ch/docs/r/r128.pdf" target="_blank" rel="noopener">EBU R 128</a> — <span data-i18n="src.r128"></span></li>
-        <li><a href="https://www.atsc.org/wp-content/uploads/2015/03/Techniques-for-establishing-and-maintaining-audio-loudness.pdf" target="_blank" rel="noopener">ATSC A/85:2013</a> — <span data-i18n="src.atsc"></span></li>
+        <li><a href="https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf" target="_blank" rel="noopener">ATSC A/85:2026-07</a> — <span data-i18n="src.atsc"></span></li>
+        <li><a href="https://podcasters.apple.com/support/893-audio-requirements" target="_blank" rel="noopener">Apple Podcasts</a> — <span data-i18n="src.applepod"></span></li>
         <li><a href="https://support.spotify.com/us/artists/article/loudness-normalization/" target="_blank" rel="noopener">Spotify Support</a> — <span data-i18n="src.spotify"></span></li>
+      </ul>
+      <h3 id="helpInstall" data-i18n="help.hInstall">Install as an app</h3><p data-i18n="help.pInstall"></p>
+      <ul>
+        <li data-i18n="help.i1"></li><li data-i18n="help.i2"></li><li data-i18n="help.i3"></li><li data-i18n="help.i4"></li>
       </ul>
       <h3 data-i18n="help.h10">Privacy</h3><p data-i18n="help.p10"></p>
     </div>

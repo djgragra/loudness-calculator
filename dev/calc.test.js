@@ -85,6 +85,6 @@ test("standards table: values match the confirmed list", () => {
   assert.deepEqual(v("apple"), [-16, null, -1, "recommended"]);
   assert.deepEqual(v("amazon"), [-14, null, -2, "recommended"]);
   assert.deepEqual(v("bbc"), [-23, 1, -1, "recommended"]);
-  assert.deepEqual(v("podcast"), [-16, null, -1, "recommended"]);
+  assert.deepEqual(v("podcast"), [-16, 1, -1, "official"]);
   for (const s of S.list) if (s.status === "official") assert.ok(s.source && s.source.url.startsWith("https://"));
 });
