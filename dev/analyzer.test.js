@@ -144,3 +144,15 @@ test("sample-rate sniffing: WAV, FLAC, Ogg Vorbis/Opus, MP3, MP4", () => {
   assert.equal(A.sniffSampleRate(b), 48000);
   assert.equal(A.sniffSampleRate(bytes(64)), null);
 });
+
+test("1 kHz -23 dBFS reads -23 LUFS at every common sample rate (re-derived K-weighting)", () => {
+  for (const fs of [8000, 16000, 22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000]) {
+    const x = tone(10, -23, 1000, fs);
+    near(A.analyze([x, x], fs).integrated, -23.0, 0.1, "fs " + fs);
+  }
+});
+
+test("K-weighted level of an 8 kHz tone is consistent across sample rates (within 0.05 LU)", () => {
+  const ref = A.analyze([tone(10, -23, 8000, 48000)], 48000).integrated;
+  for (const fs of [32000, 44100, 88200, 96000]) near(A.analyze([tone(10, -23, 8000, fs)], fs).integrated, ref, 0.05, "fs " + fs);
+});

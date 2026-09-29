@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "2026.9.3";
+  var VERSION = "2026.9.4";
   var STORE = "com.onairgarage.loudnesscalculator.";
   var Calc = window.LoudnessCalc;
   var Std = window.LoudnessStandards;
@@ -47,6 +47,8 @@
     document.documentElement.lang = state.lang;
     var nodes = document.querySelectorAll("[data-i18n]");
     for (var i = 0; i < nodes.length; i++) nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
+    var aria = document.querySelectorAll("[data-i18n-aria]");
+    for (var k = 0; k < aria.length; k++) aria[k].setAttribute("aria-label", t(aria[k].getAttribute("data-i18n-aria")));
     $("langSel").setAttribute("aria-label", t("ctl.language"));
     buildStandardSelect();
     render();
@@ -98,10 +100,13 @@
   }
 
   // ---------- inputs ----------
-  function readField(id, min, max, optional) {
+  // negOnly: loudness values are never positive, so a typed "18.4" counts as -18.4
+  // (phone keypads often have no minus key).
+  function readField(id, min, max, optional, negOnly) {
     var raw = $(id).value;
     if (raw.trim() === "") return { empty: true, ok: optional, value: null };
     var n = Calc.parseNumber(raw);
+    if (negOnly && n !== null && n > 0) n = -n;
     if (n === null || n < min || n > max) return { empty: false, ok: false, value: null };
     return { empty: false, ok: true, value: n };
   }
@@ -219,7 +224,7 @@
 
     var dl = $("infoGrid"); dl.textContent = "";
     addRow(dl, t("info.target"), text(s.target === null ? "—" : fmt(s.target) + " LUFS"));
-    var tolKey = { ebu: "info.tolEbu", atsc: "info.tolAtsc", bbc: "info.tolBbc" }[s.id];
+    var tolKey = { ebu: "info.tolEbu", atsc: "info.tolAtsc", bbc: "info.tolBbc", podcast: "info.tolPodcast" }[s.id];
     addRow(dl, t("info.tolerance"), text(s.tolerance !== null && tolKey ? t(tolKey, fmt(s.tolerance).replace("−", "")) : t("info.none")));
     var tpNode = document.createElement("span");
     tpNode.appendChild(text(s.tpLimit === null ? t("info.none") : fmt(s.tpLimit) + " dBTP"));
@@ -236,6 +241,7 @@
       addRow(dl, t("info.source"), a);
     }
     $("infoNote").textContent = s.status === "recommended" ? t("info.recommendedNote") : (s.status === "custom" ? t("info.customNote") : "");
+    $("infoMeasure").textContent = s.id === "atsc" ? t("info.measureNote.atsc") : "";
   }
 
   function renderPlayback(s, input, tp) {
@@ -258,9 +264,9 @@
   }
 
   function render() {
-    var lufs = readField("lufsIn", LUFS_MIN, LUFS_MAX, false);
+    var lufs = readField("lufsIn", LUFS_MIN, LUFS_MAX, false, true);
     var tp = readField("tpIn", TP_MIN, TP_MAX, true);
-    var custom = { target: readField("cTarget", LUFS_MIN, LUFS_MAX, false), limit: readField("cLimit", TP_MIN, TP_MAX, true) };
+    var custom = { target: readField("cTarget", LUFS_MIN, LUFS_MAX, false, true), limit: readField("cLimit", TP_MIN, TP_MAX, true) };
     var isCustom = state.std === "custom";
 
     $("customBox").hidden = !isCustom;
@@ -374,6 +380,7 @@
     if (r.channels === 1) addNote(notes, t("meas.note.mono"));
     if (r.channels === 6) addNote(notes, t("meas.note.lfe"));
     if (lastMeasure.lossy) addNote(notes, t("meas.note.lossy"));
+    if (state.std === "atsc") addNote(notes, t("info.measureNote.atsc"));
   }
 
   function measureFile(file) {
@@ -418,6 +425,29 @@
     if (target && target.scrollIntoView) target.scrollIntoView();
   }
 
+  // ---------- install as an app ----------
+  var deferredInstall = null;   // Chromium's beforeinstallprompt event, when the browser offers one
+
+  function isInstalled() {
+    if (navigator.standalone === true) return true;   // iOS home-screen app
+    if (!window.matchMedia) return false;
+    return ["standalone", "minimal-ui", "fullscreen", "window-controls-overlay"].some(function (m) {
+      return window.matchMedia("(display-mode: " + m + ")").matches;
+    });
+  }
+  function updateInstallButton() { $("installBtn").hidden = isInstalled(); }
+
+  function onInstallClick() {
+    if (deferredInstall) {
+      var ev = deferredInstall;
+      deferredInstall = null;
+      ev.prompt();
+      if (ev.userChoice && ev.userChoice.then) ev.userChoice.then(updateInstallButton, updateInstallButton);
+    } else {
+      openHelp("helpInstall");   // no native prompt (Safari, iOS, Firefox...): show the steps
+    }
+  }
+
   // ---------- wiring ----------
   function init() {
     $("ver").textContent = "v" + VERSION;
@@ -433,7 +463,7 @@
     ["cTarget", "cLimit"].forEach(function (id) {
       $(id).addEventListener("input", function () { save(id, $(id).value); render(); });
     });
-    $("stdSel").addEventListener("change", function () { state.std = $("stdSel").value; save("std", state.std); render(); });
+    $("stdSel").addEventListener("change", function () { state.std = $("stdSel").value; save("std", state.std); render(); if (lastMeasure) showMeasureResult(); });
     $("langSel").addEventListener("change", function () { state.lang = $("langSel").value; save("lang", state.lang); applyLang(); });
     $("themeSel").addEventListener("change", function () { state.theme = $("themeSel").value; save("theme", state.theme); applyTheme(); });
     if (window.matchMedia) {
@@ -446,6 +476,23 @@
     $("helpBtn").addEventListener("click", function () { openHelp(null); });
     $("measHelp").addEventListener("click", function () { openHelp("helpLimits"); });
     $("fileBtn").addEventListener("click", function () { $("fileIn").click(); });
+    var signBtns = document.querySelectorAll(".signbtn");
+    Array.prototype.forEach.call(signBtns, function (b) {
+      b.addEventListener("click", function () {
+        var el = $(b.getAttribute("data-sign")), v = el.value.trim().replace("\u2212", "-");
+        el.value = v.charAt(0) === "-" ? v.slice(1) : "-" + v;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.focus();
+      });
+    });
+    window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferredInstall = e; updateInstallButton(); });
+    window.addEventListener("appinstalled", function () { deferredInstall = null; updateInstallButton(); });
+    $("installBtn").addEventListener("click", onInstallClick);
+    updateInstallButton();
+    if (window.matchMedia) {
+      var dm = window.matchMedia("(display-mode: standalone)");
+      if (dm.addEventListener) dm.addEventListener("change", updateInstallButton);
+    }
     $("fileIn").addEventListener("change", function () {
       var f = $("fileIn").files && $("fileIn").files[0];
       $("fileIn").value = "";

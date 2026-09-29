@@ -4,7 +4,8 @@
    status "official"    : value read from the primary document (see source).
    status "recommended" : no official documentation found; the value is a
                           common-practice suggestion only (shown as such in the UI).
-   Values checked September 2026. LUFS and LKFS are the same measure
+   Values checked September 2026 against: EBU R 128 v5 (Nov 2023), ATSC A/85:2026-07 (8 July 2026),
+   Apple Podcasts audio requirements, Spotify loudness page. LUFS and LKFS are the same measure
    (ITU-R BS.1770); "dBTP" and "dB TP" are both true peak.
 
    playback: how the platform normalises at playback (streaming only).
@@ -21,7 +22,7 @@
     {
       id: "atsc", group: "broadcast", name: "ATSC A/85",
       target: -24, tolerance: 2, tpLimit: -2, status: "official",
-      source: { label: "ATSC A/85:2013", url: "https://www.atsc.org/wp-content/uploads/2015/03/Techniques-for-establishing-and-maintaining-audio-loudness.pdf" }
+      source: { label: "ATSC A/85:2026-07, Table M.1 and sect. 6", url: "https://www.atsc.org/wp-content/uploads/2026/07/A85-2026-07.pdf" }
     },
     {
       id: "bbc", group: "broadcast", name: "BBC",
@@ -49,8 +50,9 @@
       playback: { mode: "down" }
     },
     {
-      id: "podcast", group: "podcast", name: "Podcast",
-      target: -16, tolerance: null, tpLimit: -1, status: "recommended", source: null
+      id: "podcast", group: "podcast", name: "Apple Podcasts",
+      target: -16, tolerance: 1, tpLimit: -1, status: "official",
+      source: { label: "Apple Podcasts for Creators, audio requirements", url: "https://podcasters.apple.com/support/893-audio-requirements" }
     }
   ];
 

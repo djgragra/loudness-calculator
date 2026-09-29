@@ -4,7 +4,7 @@
 
    Bump CACHE_VERSION whenever any file below changes; old caches are
    dropped on activate. */
-const CACHE_VERSION = "v2026.9.3";
+const CACHE_VERSION = "v2026.9.4";
 const CACHE_NAME = "loudnesscalculator-" + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -21,6 +21,7 @@ const PRECACHE_URLS = [
   "./analyzer-worker.js",
   "./measure.js",
   "./icons/icon.svg",
+  "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
