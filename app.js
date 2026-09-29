@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "2026.9.1";
+  var VERSION = "2026.9.2";
   var STORE = "com.onairgarage.loudnesscalculator.";
   var Calc = window.LoudnessCalc;
   var Std = window.LoudnessStandards;

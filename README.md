@@ -49,7 +49,7 @@ The measurement runs entirely in the browser (Web Audio decoding + a Web Worker)
 
 - **Method**: own implementation of [ITU-R BS.1770](https://www.itu.int/rec/R-REC-BS.1770) (checked against revision 5, 11/2023): K-weighting, 400 ms blocks with 75 % overlap, gating at −70 LUFS and −10 LU below the average, channel weights 1.0 / 1.41, LFE excluded. True peak by 4× oversampling (windowed-sinc interpolator).
 - **Whole programme only**: no dialogue gating (ATSC A/85 long-form content is defined on dialogue level) and no loudness range.
-- **Validation** (`node --test dev/*.test.js`): K-weighting coefficients equal the published 48 kHz values; [EBU Tech 3341](https://tech.ebu.ch/docs/tech/tech3341.pdf) test cases 1–6 (loudness, gating, 5.0 channels) and 15–19 (true peak), synthesised at 48 kHz, are within the accepted tolerances (±0.1 LU; +0.2/−0.4 dB). This is not a certified meter: use a certified one for contractual deliveries.
+- **Validation**: (1) K-weighting coefficients equal the published 48 kHz values, and the algorithm parameters were checked against the BS.1770-5 text. (2) `node --test dev/*.test.js`: [EBU Tech 3341](https://tech.ebu.ch/docs/tech/tech3341.pdf) cases 1–6 and 15–19 synthesised at 48 kHz. (3) `node dev/validate-ebu.js <folder>` on the official [EBU loudness test set v5.0](https://tech.ebu.ch/publications/ebu_loudness_test_set) (not included in this repo, see EBU Terms of Use): all 18 integrated-loudness and true-peak cases (1–8 and 15–23) are within the accepted tolerances (±0.1 LU; +0.2/−0.4 dB). Largest deviations: +0.05 LU on loudness, −0.15 dB on true peak (cases 20–23). Short-term and momentary cases (9–14) are not implemented. This is not a certified meter: use a certified one for contractual deliveries.
 - **Decoding**: done by the browser. The original sample rate is sniffed from the file header (WAV, FLAC, Ogg, MP3, MP4) so the browser decodes without resampling; when detection fails or the rate is not supported, the app shows a note. Lossy files give a decoder-dependent true peak.
 - **Channels**: mono, stereo, 3, 5.0 and 5.1 (order L R C LFE Ls Rs) are recognised; other layouts are counted with equal weight and the app says so.
 - **Limits**: 800 MB and 90 minutes per file.
@@ -69,7 +69,7 @@ Tests (Node 18+): `node --test dev/*.test.js`
 - `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests and the icon generator; not deployed.
 
-Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.1`), tags `v2026.9.1`, as in the other OnAir Garage apps.
+Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.2`), tags `v2026.9.2`, as in the other OnAir Garage apps.
 
 ## Credits
 
