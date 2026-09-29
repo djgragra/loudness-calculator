@@ -23,7 +23,7 @@ Languages: English, Italiano, Español. The app always opens in English; a manua
 
 **Install as an app** (computer, phone, tablet): "Install app" button at the top (Chrome, Edge and other Chromium browsers); on iPhone/iPad use Share → Add to Home Screen; on Safari for Mac use File → Add to Dock. Once installed it works offline and shows an "update available" banner when a new version is ready. The instructions are also in the in-app help.
 
-Phone use: loudness fields accept a value without the minus sign (`18.4` counts as −18.4, since loudness is never positive) and every numeric field has a ± button, because phone keypads often lack a minus key.
+Phone use: loudness fields (measured loudness, custom target) accept a value without the minus sign (`18.4` counts as −18.4, since loudness is never positive), so they need no sign button; a wrong value shows the allowed range. The true-peak fields, which can be positive, have a −/+ button because phone keypads often lack a minus key.
 
 ## Standards and values
 
@@ -103,7 +103,7 @@ Tests (Node 18+): `node --test dev/*.test.js`
 - `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests, validation scripts and the icon generator; not deployed.
 
-Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.5`), tags `v2026.9.5`, as in the other OnAir Garage apps.
+Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.6`), tags `v2026.9.6`, as in the other OnAir Garage apps.
 
 ## Credits
 
