@@ -110,7 +110,7 @@
     var raw = $(id).value;
     if (raw.trim() === "") return { empty: true, ok: optional, value: null };
     var n = Calc.parseNumber(raw);
-    if (negOnly && n !== null && n > 0) n = -n;
+    if (negOnly && n !== null && n > 0 && raw.trim().charAt(0) !== "+") n = -n;   // an explicit "+" stays positive (and is rejected)
     if (n === null || n < min || n > max) return { empty: false, ok: false, value: null };
     return { empty: false, ok: true, value: n };
   }
@@ -610,8 +610,9 @@
     var signBtns = document.querySelectorAll(".signbtn");
     Array.prototype.forEach.call(signBtns, function (b) {
       b.addEventListener("click", function () {
-        var el = $(b.getAttribute("data-sign")), v = el.value.trim().replace("\u2212", "-");
-        el.value = v.charAt(0) === "-" ? v.slice(1) : "-" + v;
+        // cycles - and +: "18.4" -> "-18.4" -> "+18.4" -> "-18.4"
+        var el = $(b.getAttribute("data-sign")), v = el.value.trim().replace("\u2212", "-"), c = v.charAt(0);
+        el.value = c === "-" ? "+" + v.slice(1) : (c === "+" ? "-" + v.slice(1) : "-" + v);
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.focus();
       });
