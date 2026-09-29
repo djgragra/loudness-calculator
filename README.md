@@ -17,6 +17,7 @@ Enter the integrated loudness of a file (LUFS, from any ITU-R BS.1770 meter), op
 - A **scale** with input, target (and tolerance band) and result.
 - **Platform playback**: the gain a streaming platform would apply to your file as it is.
 - A custom target / true-peak limit for house or client specs.
+- **Measure from a file**: if you don't know the values, load an audio file; loudness and true peak are measured in the browser and copied into the fields.
 
 Languages: English (default), Italiano, Español. Theme: light, dark, or follow the system. Choices are stored only on the device (`localStorage`). No data leaves the browser; fonts are served locally.
 
@@ -42,6 +43,17 @@ Notes:
 - EBU R 128 v5 lists ±0.5 LU only in its revision history (v3, 2014); the current text gives ±1.0 LU where the target is not practically achievable, and ±0.2 LU as a quality-control measurement tolerance. The app shows ±1.0 LU.
 - Playback behaviour: Spotify raises quiet files (keeping 1 dB headroom for lossy) and lowers loud ones (official). YouTube, Apple Music and Amazon Music are reported to only lower loud files; this is not officially documented, and the app labels it so.
 
+## Measuring a file (how it works, sources, limits)
+
+The measurement runs entirely in the browser (Web Audio decoding + a Web Worker). The file is never uploaded.
+
+- **Method**: own implementation of [ITU-R BS.1770](https://www.itu.int/rec/R-REC-BS.1770) (checked against revision 5, 11/2023): K-weighting, 400 ms blocks with 75 % overlap, gating at −70 LUFS and −10 LU below the average, channel weights 1.0 / 1.41, LFE excluded. True peak by 4× oversampling (windowed-sinc interpolator).
+- **Whole programme only**: no dialogue gating (ATSC A/85 long-form content is defined on dialogue level) and no loudness range.
+- **Validation** (`node --test dev/*.test.js`): K-weighting coefficients equal the published 48 kHz values; [EBU Tech 3341](https://tech.ebu.ch/docs/tech/tech3341.pdf) test cases 1–6 (loudness, gating, 5.0 channels) and 15–19 (true peak), synthesised at 48 kHz, are within the accepted tolerances (±0.1 LU; +0.2/−0.4 dB). This is not a certified meter: use a certified one for contractual deliveries.
+- **Decoding**: done by the browser. The original sample rate is sniffed from the file header (WAV, FLAC, Ogg, MP3, MP4) so the browser decodes without resampling; when detection fails or the rate is not supported, the app shows a note. Lossy files give a decoder-dependent true peak.
+- **Channels**: mono, stereo, 3, 5.0 and 5.1 (order L R C LFE Ls Rs) are recognised; other layouts are counted with equal weight and the app says so.
+- **Limits**: 800 MB and 90 minutes per file.
+
 ## Run locally
 
 Static files, no build step. Serve the folder with any web server (service workers need `http://localhost` or HTTPS):
@@ -50,11 +62,11 @@ Static files, no build step. Serve the folder with any web server (service worke
 python3 -m http.server 8123
 ```
 
-Tests (Node 18+): `node --test dev/calc.test.js`
+Tests (Node 18+): `node --test dev/*.test.js`
 
 ## Structure
 
-- `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
+- `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests and the icon generator; not deployed.
 
 Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` on every release.
