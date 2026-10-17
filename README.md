@@ -21,6 +21,8 @@ Enter the integrated loudness of a file (LUFS, from any ITU-R BS.1770 meter), op
 
 Languages: English, Italiano, Español. The app always opens in English; a manual change is remembered on the device. Theme: light, dark, or follow the system. Choices are stored only on the device (`localStorage`). No data leaves the browser; fonts are served locally.
 
+**Tip jar**: a small card at the bottom of the page (the jar of onairgarage.com, one line and a button; the jar is a link too) opens the site's tip page, in the language of the app, in a new tab. Nothing else: no pop-ups, no reminders, nothing near the calculator. It works offline like the rest of the page.
+
 **Install as an app** (computer, phone, tablet): "Install app" button at the top (Chrome, Edge and other Chromium browsers); on iPhone/iPad use Share → Add to Home Screen; on Safari for Mac use File → Add to Dock. Once installed it works offline and shows an "update available" banner when a new version is ready. The instructions are also in the in-app help.
 
 Phone use: loudness fields (measured loudness, custom target) accept a value without the minus sign (`18.4` counts as −18.4, since loudness is never positive), so they need no sign button; a wrong value shows the allowed range. The true-peak fields, which can be positive, have a −/+ button because phone keypads often lack a minus key.
@@ -72,6 +74,8 @@ The measurement is checked against these references (results as of September 202
 
 Not validated because not implemented: short-term and momentary loudness (Tech 3341 cases 9–14), loudness range (Tech 3342), dialogue gating.
 
+Not tried on real devices: the install dialog with the manifest screenshots on Chrome for Android and Chrome/Edge on a computer, and the app on Safari/iOS. The interface, the tip box, offline use and the manifest were checked in Chromium driven by Playwright only.
+
 ## Sources to re-check
 
 Values and methods depend on documents that get revised. Last read on 2026-09-29:
@@ -100,10 +104,11 @@ Tests (Node 18+): `node --test dev/*.test.js`
 
 ## Structure
 
-- `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/`, `fonts/` — the app (served under `/apps/loudness-calculator/`).
+- `index.html`, `style.css`, `fonts.css`, `app.js`, `calc.js`, `standards.js`, `i18n.js`, `analyzer.js`, `analyzer-worker.js`, `measure.js`, `sw.js`, `manifest.json`, `icons/` (with the tip jar), `screenshots/` (the two install screenshots of the manifest, taken with Playwright from the real app with invented values), `fonts/` — the app (served under `/apps/loudness-calculator/`).
 - `dev/` — tests, validation scripts and the icon generator; not deployed.
+- `.github/workflows/` — `ci.yml` runs the tests on every pull request and on `main`; `release.yml` publishes a release from the Actions tab (it asks for the version, checks it against `app.js` and `sw.js`, runs the tests, then GitHub creates the tag and the release).
 
-Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.9.6`), tags `v2026.9.6`, as in the other OnAir Garage apps.
+Static-app constraints: relative paths only, strict CSP (no inline scripts or styles), service worker scoped to the app folder. Bump `CACHE_VERSION` in `sw.js` and `VERSION` in `app.js` on every release. Versions are `year.month.number` (e.g. `2026.10.1`), tags `v2026.10.1`, as in the other OnAir Garage apps.
 
 ## Credits
 

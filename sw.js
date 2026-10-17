@@ -4,7 +4,7 @@
 
    Bump CACHE_VERSION whenever any file below changes; old caches are
    dropped on activate. */
-const CACHE_VERSION = "v2026.9.6";
+const CACHE_VERSION = "v2026.10.1";
 const CACHE_NAME = "loudnesscalculator-" + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -25,6 +25,7 @@ const PRECACHE_URLS = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
+  "./icons/tip-jar.webp",
   "./fonts/share-tech-mono-400-latin.woff2",
   "./fonts/barlow-condensed-400-latin.woff2",
   "./fonts/barlow-condensed-600-latin.woff2",

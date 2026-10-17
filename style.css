@@ -188,6 +188,18 @@ select { cursor: pointer; }
 .play__body { margin: 4px 0 0; }
 .play__hint { margin: 6px 0 0; font-size: 15px; color: var(--ink2); }
 
+/* ---------- tip box (the jar of onairgarage.com, one line, a cherry pill) ---------- */
+.tip-box { max-width: 1040px; margin: 20px auto 0; display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--face2); border: 1px solid var(--line); border-radius: 10px; }
+.tip-box__art { flex: none; display: block; line-height: 0; }
+.tip-box__art img { display: block; width: 80px; height: auto; }
+.tip-box__body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.tip-box__body p { margin: 0; font-size: 16px; color: var(--ink2); }
+.tip-box__btn { display: inline-block; padding: 5px 14px; border: 2px solid #fbf4e4; border-radius: 99px; background: #c8232c; color: #fbf4e4; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
+.tip-box__btn:hover { background: #de2d37; }
+.tip-box__btn:focus-visible, .tip-box__art:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (pointer: coarse) { .tip-box__btn { display: inline-flex; align-items: center; min-height: 44px; } }
+@media (prefers-reduced-motion: no-preference) { .tip-box__art img { transition: transform .15s ease; } .tip-box__art:hover img { transform: rotate(-4deg) scale(1.06); } }
+
 /* ---------- footer, help, update banner ---------- */
 .foot { max-width: 1040px; margin: 20px auto 0; padding: 12px 0 24px; font-size: 15px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .help { width: min(680px, calc(100% - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--face); color: var(--ink); box-shadow: 0 10px 40px rgba(0,0,0,.45); }
@@ -210,7 +222,7 @@ select { cursor: pointer; }
   .panel > .readouts { order: 3; }
   .panel > .scale { order: 4; }
   .panel > .warn { order: 5; border-left-width: 6px; background: var(--warn-bg); border-color: var(--warn); }
-  .topbar, .foot { max-width: 680px; }
+  .topbar, .foot, .tip-box { max-width: 680px; }
 }
 @media (max-width: 560px) {
   body { font-size: 17px; }
