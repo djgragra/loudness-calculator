@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "2026.9.6";
+  var VERSION = "2026.10.1";
   var STORE = "com.onairgarage.loudnesscalculator.";
   var Calc = window.LoudnessCalc;
   var Std = window.LoudnessStandards;
@@ -54,6 +54,8 @@
     var aria = document.querySelectorAll("[data-i18n-aria]");
     for (var k = 0; k < aria.length; k++) aria[k].setAttribute("aria-label", t(aria[k].getAttribute("data-i18n-aria")));
     $("langSel").setAttribute("aria-label", t("ctl.language"));
+    $("tipBtn").href = t("tip.url");   // the support page in the language of the app; the jar links to the same page
+    $("tipArt").href = t("tip.url");
     buildStandardSelect();
     render();
     if (lastMeasure) showMeasureResult();

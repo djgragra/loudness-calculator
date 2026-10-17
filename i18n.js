@@ -190,7 +190,10 @@
 
       "foot.by": "Graziano Melzi · OnAir Garage",
       "foot.license": "MIT License",
-      "foot.contact": "Contact"
+      "foot.contact": "Contact",
+      "tip.line": "Useful to you? A coffee for the mechanics is always welcome.",
+      "tip.btn": "Tip jar",
+      "tip.url": "https://onairgarage.com/support/"
     },
 
     it: {
@@ -379,7 +382,10 @@
 
       "foot.by": "Graziano Melzi · OnAir Garage",
       "foot.license": "Licenza MIT",
-      "foot.contact": "Contatti"
+      "foot.contact": "Contatti",
+      "tip.line": "Ti è utile? Un caffè per i meccanici è sempre ben accetto.",
+      "tip.btn": "Salvadanaio",
+      "tip.url": "https://onairgarage.com/it/support/"
     },
 
     es: {
@@ -568,7 +574,10 @@
 
       "foot.by": "Graziano Melzi · OnAir Garage",
       "foot.license": "Licencia MIT",
-      "foot.contact": "Contacto"
+      "foot.contact": "Contacto",
+      "tip.line": "¿Te resulta útil? Un café para los mecánicos siempre es bienvenido.",
+      "tip.btn": "Hucha",
+      "tip.url": "https://onairgarage.com/es/support/"
     }
   };
 
