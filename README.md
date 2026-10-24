@@ -6,6 +6,7 @@ Gain in dB to bring a file to a loudness target, with a true-peak check. Free, o
 - Web app: https://onairgarage.com/apps/loudness-calculator/
 - Author: Graziano Melzi · OnAir Garage — hello@onairgarage.com
 - License: MIT (see `LICENSE`)
+- Manual: attached to every release as three PDFs, English (`Loudness-Calculator-Manual-EN-<version>.pdf`), Italian (`-IT-`) and Spanish (`-ES-`); the source is in `dev/manual/` (`python3 dev/manual/build.py <version> <folder>` makes the PDFs; it needs Chrome or Chromium).
 
 ## What it does
 
