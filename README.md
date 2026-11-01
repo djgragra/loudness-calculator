@@ -93,6 +93,8 @@ Values and methods depend on documents that get revised. Last read on 2026-09-29
 
 Not verifiable with a primary source (values are recommendations): YouTube, Apple Music, Amazon Music, BBC delivery specification.
 
+<a href="https://ko-fi.com/F8V328ADFH"><img height="36" src="https://storage.ko-fi.com/cdn/kofi6.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
+
 ## Run locally
 
 Static files, no build step. Serve the folder with any web server (service workers need `http://localhost` or HTTPS):
@@ -114,3 +116,9 @@ Static-app constraints: relative paths only, strict CSP (no inline scripts or st
 ## Credits
 
 Fonts (SIL Open Font License 1.1, see `fonts/OFL-*.txt`): Barlow Condensed, Share Tech Mono.
+
+## Support
+
+This tool is free and will stay free, with source code. If it saved your day, you can leave a tip on Ko-fi: a thank-you, nothing more.
+
+<a href="https://ko-fi.com/F8V328ADFH"><img height="36" src="https://storage.ko-fi.com/cdn/kofi6.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
